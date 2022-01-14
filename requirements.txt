@@ -1,0 +1,11 @@
+alembic
+aiosqlite
+black
+fastapi
+https://github.com/Ae-Mc/fastapi-users/archive/master.zip
+flake8
+mypy
+pylint
+pymysql
+sqlalchemy-utils
+uvicorn[standard]
