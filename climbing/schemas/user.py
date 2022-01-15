@@ -4,7 +4,7 @@ from fastapi_users import models
 from fastapi_users.authentication.strategy.db import BaseAccessToken
 
 
-class User(models.BaseUser):
+class User(models.BaseUser, models.BaseOAuthAccountMixin):
     """User fetch pydantic model"""
 
     username: str
