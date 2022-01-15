@@ -24,6 +24,8 @@ uvicorn = "^0.17.0"
 black = "^21.12b0"
 pylint = "^2.12.2"
 mypy = "^0.931"
+flake8 = "^4.0.1"
+pycodestyle = "^2.8.0"
 
 [tool.poetry.extras]
 neovim = ["pynvim", "pyright"]
