@@ -5,8 +5,7 @@ from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 from fastapi_users_db_sqlalchemy.access_token import (
     SQLAlchemyAccessTokenDatabase,
 )
-from sqlalchemy import create_engine
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from climbing.core.config import settings
@@ -15,9 +14,7 @@ from climbing.models.user import User
 from climbing.schemas.user import AccessToken as AccessTokenSchema
 from climbing.schemas.user import UserDB
 
-engine = create_engine(
-    settings.SQLALCHEMY_DATABASE_URI, connect_args={"check_same_thread": False}
-)
+engine = create_async_engine(settings.SQLALCHEMY_DATABASE_URI)
 SessionLocal = sessionmaker(
     bind=engine, autocommit=False, autoflush=False, class_=AsyncSession
 )
@@ -36,7 +33,7 @@ async def get_user_db(
 
 async def get_access_token_db(
     session: AsyncSession = Depends(get_async_session),
-) -> AsyncGenerator[SQLAlchemyAccessTokenDatabase]:
+) -> AsyncGenerator[SQLAlchemyAccessTokenDatabase, None]:
     yield SQLAlchemyAccessTokenDatabase(
         AccessTokenSchema, session, AccessTokenModel
     )

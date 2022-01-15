@@ -38,7 +38,7 @@ class UserManager(BaseUserManager[UserCreate, UserDB]):
 
 async def get_user_manager(
     user_db=Depends(get_user_db),
-) -> AsyncGenerator[UserManager]:
+) -> AsyncGenerator[UserManager, None]:
     """Returns UserManager instance
 
     Returns:
