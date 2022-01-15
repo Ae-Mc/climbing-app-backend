@@ -1,4 +1,4 @@
-from util import ExtendedEnum
+from climbing.util import ExtendedEnum
 
 
 class Category(str, ExtendedEnum):

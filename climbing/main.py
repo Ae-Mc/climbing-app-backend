@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.api_v1.api import api_router
-from core.config import settings
+from climbing.api.api_v1.api import api_router
+from climbing.core.config import settings
 
 app = FastAPI(
     contact={

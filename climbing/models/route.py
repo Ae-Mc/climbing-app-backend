@@ -3,10 +3,10 @@ from datetime import date
 from sqlalchemy import Column, Date, Enum, ForeignKey, String
 from sqlalchemy.orm import relationship
 
-from db.base_class import Base
-from models.route_image import RouteImage
-from models.user import User
-from schemas import Category
+from climbing.db.base_class import Base
+from climbing.models.route_image import RouteImage
+from climbing.models.user import User
+from climbing.schemas import Category
 
 
 class Route(Base):

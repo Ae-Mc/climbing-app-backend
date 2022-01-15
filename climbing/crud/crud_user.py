@@ -1,9 +1,8 @@
 from typing import Any, Dict, Optional, Union
 from sqlalchemy.orm import Session
-from core.security import get_password_hash, verify_password
-from crud.base import CRUDBase
-from models.user import User
-from schemas import UserCreate, UserUpdate
+from climbing.crud.base import CRUDBase
+from climbing.models.user import User
+from climbing.schemas import UserCreate, UserUpdate
 
 
 class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):

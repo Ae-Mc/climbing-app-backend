@@ -11,10 +11,10 @@ from fastapi_users_db_sqlalchemy.access_token import (
 from sqlalchemy import Column, DateTime, String
 from sqlalchemy.orm import declared_attr, relationship
 
-from db.base_class import Base
+from climbing.db.base_class import Base
 
 if TYPE_CHECKING:
-    from models.route import Route
+    from climbing.models.route import Route
 
 
 class User(Base, SQLAlchemyBaseUserTable):

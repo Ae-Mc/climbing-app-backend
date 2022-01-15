@@ -9,11 +9,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 
-from core.config import settings
-from models.user import AccessToken as AccessTokenModel
-from models.user import User
-from schemas.user import AccessToken as AccessTokenSchema
-from schemas.user import UserDB
+from climbing.core.config import settings
+from climbing.models.user import AccessToken as AccessTokenModel
+from climbing.models.user import User
+from climbing.schemas.user import AccessToken as AccessTokenSchema
+from climbing.schemas.user import UserDB
 
 engine = create_engine(
     settings.SQLALCHEMY_DATABASE_URI, connect_args={"check_same_thread": False}

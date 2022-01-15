@@ -4,8 +4,8 @@ from sqlalchemy import Column, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy_utils import URLType
 
-from db.base_class import Base
-from models.user import User
+from climbing.db.base_class import Base
+from climbing.models.user import User
 
 
 class File(Base):

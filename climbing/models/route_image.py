@@ -3,11 +3,11 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import relationship
 
-from db.base_class import Base
+from climbing.db.base_class import Base
 
 if TYPE_CHECKING:
-    from models.file import File
-    from models.route import Route
+    from climbing.models.file import File
+    from climbing.models.route import Route
 
 
 class RouteImage(Base):

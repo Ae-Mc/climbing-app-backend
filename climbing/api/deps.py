@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from fastapi import Header, status, HTTPException
-from db.session import SessionLocal
+from climbing.db.session import SessionLocal
 
 
 def get_database() -> Session:

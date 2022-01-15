@@ -11,8 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from alembic import context
 from alembic.environment import MigrationContext
-from core.config import settings
-from db.base import Base
+from climbing.core.config import settings
+from climbing.db.base import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

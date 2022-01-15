@@ -1,7 +1,7 @@
-from models.file import File
-from models.route import Route
-from models.route_image import RouteImage
-from models.user import OAuthAccount, User
+from climbing.models.file import File
+from climbing.models.route import Route
+from climbing.models.route_image import RouteImage
+from climbing.models.user import OAuthAccount, User
 
 from .base_class import Base
 

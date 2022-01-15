@@ -1,5 +1,5 @@
 from fastapi import Depends
-from fastapi_users import FastAPIUsers
+from fastapi_users.fastapi_users import FastAPIUsers
 from fastapi_users.authentication import (
     AuthenticationBackend,
     BearerTransport,
@@ -10,10 +10,16 @@ from fastapi_users.authentication.strategy.db import (
     DatabaseStrategy,
 )
 
-from core.config import settings
-from core.user_manager import get_user_manager
-from db.session import get_access_token_db
-from schemas.user import AccessToken, User, UserCreate, UserDB, UserUpdate
+from climbing.core.config import settings
+from climbing.core.user_manager import get_user_manager
+from climbing.db.session import get_access_token_db
+from climbing.schemas.user import (
+    AccessToken,
+    User,
+    UserCreate,
+    UserDB,
+    UserUpdate,
+)
 
 bearer_transport = BearerTransport(settings.AUTH_TOKEN_ENDPOINT_URL)
 

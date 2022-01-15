@@ -1,7 +1,7 @@
 from typing import Any, Dict, Union
 from sqlalchemy.orm import Session
-from models import Route
-from schemas.route import RouteCreate, RouteUpdate
+from climbing.models import Route
+from climbing.schemas.route import RouteCreate, RouteUpdate
 from .base import CRUDBase
 
 

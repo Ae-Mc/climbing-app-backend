@@ -1,11 +1,11 @@
 from typing import AsyncGenerator
 
 from fastapi import Depends, Request
-from fastapi_users import BaseUserManager
+from fastapi_users.manager import BaseUserManager
 
-from core.private import SECRET
-from db.session import get_user_db
-from schemas import UserCreate, UserDB
+from climbing.db.session import get_user_db
+from climbing.schemas import UserCreate, UserDB
+from .private import SECRET
 
 
 class UserManager(BaseUserManager[UserCreate, UserDB]):
