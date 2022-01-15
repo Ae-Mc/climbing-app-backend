@@ -10,7 +10,7 @@ class User(models.BaseUser, models.BaseOAuthAccountMixin):
     username: str
     first_name: str
     last_name: str
-    creation_date: datetime
+    created_at: datetime | None
 
 
 class UserCreate(models.BaseUserCreate):
