@@ -31,7 +31,10 @@ def get_strategy(
 ) -> Strategy:
     """Returns JWTStrategy used by AuthenticationBackend"""
     return DatabaseStrategy(
-        database=access_token_db, lifetime_seconds=settings
+        database=access_token_db,
+        lifetime_seconds=int(
+            settings.ACCESS_TOKEN_EXPIRE_TIME.total_seconds()
+        ),
     )
 
 
