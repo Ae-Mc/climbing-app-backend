@@ -1,12 +1,13 @@
 from typing import List
 from fastapi.param_functions import Depends
+from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.engine import Result
+
 from climbing.api.deps import get_database
 from climbing.core.security import fastapi_users
-from climbing.schemas.user import User as PydanticUser
 from climbing.models.user import User
+from climbing.schemas.user import User as PydanticUser
 
 router = fastapi_users.get_users_router()
 

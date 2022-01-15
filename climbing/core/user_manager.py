@@ -5,6 +5,7 @@ from fastapi_users.manager import BaseUserManager
 
 from climbing.db.session import get_user_db
 from climbing.schemas import UserCreate, UserDB
+
 from .private import SECRET
 
 
