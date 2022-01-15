@@ -1,5 +1,4 @@
 from fastapi import Depends
-from fastapi_users.fastapi_users import FastAPIUsers
 from fastapi_users.authentication import (
     AuthenticationBackend,
     BearerTransport,
@@ -9,6 +8,7 @@ from fastapi_users.authentication.strategy.db import (
     AccessTokenDatabase,
     DatabaseStrategy,
 )
+from fastapi_users import FastAPIUsers
 
 from climbing.core.config import settings
 from climbing.core.user_manager import get_user_manager

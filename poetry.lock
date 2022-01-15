@@ -224,7 +224,7 @@ test = ["pytest (>=6.2.4,<7.0.0)", "pytest-cov (>=2.12.0,<4.0.0)", "mypy (==0.91
 
 [[package]]
 name = "fastapi-users"
-version = "9.2.1"
+version = "9.2.2"
 description = "Ready-to-use and customizable users management for FastAPI."
 category = "main"
 optional = false
@@ -835,7 +835,7 @@ neovim = ["pynvim", "pyright"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "6f40016d83437b6ec0346ca3940cd6964d8dd5b77469c61a8fab778b4b618171"
+content-hash = "d9fbdfb1871cdb7b64ef7af114d5efb020ec9852db89e1402b16f102243998e7"
 
 [metadata.files]
 aiosqlite = [
@@ -963,8 +963,8 @@ fastapi = [
     {file = "fastapi-0.71.0.tar.gz", hash = "sha256:2b5ac0ae89c80b40d1dd4b2ea0bb1f78d7c4affd3644d080bf050f084759fff2"},
 ]
 fastapi-users = [
-    {file = "fastapi-users-9.2.1.tar.gz", hash = "sha256:bbde9bc7bb723f304d45887dc54350fe6864d37d90c45d8b655ff82f092471fb"},
-    {file = "fastapi_users-9.2.1-py3-none-any.whl", hash = "sha256:a292f2c615a31889a68826062fef231a51045f689a34aa3ef3c16da3e896cff3"},
+    {file = "fastapi-users-9.2.2.tar.gz", hash = "sha256:59febb9302dd0590b6992343896437bd1941ec4c6726bf5abf9093d681a98f23"},
+    {file = "fastapi_users-9.2.2-py3-none-any.whl", hash = "sha256:b565d481ea2182f09eff0933f3263022f6d8595e4eaab70c1218a8028ed1bb41"},
 ]
 fastapi-users-db-sqlalchemy = [
     {file = "fastapi-users-db-sqlalchemy-2.0.4.tar.gz", hash = "sha256:93bd5ba48f7a7e9fe43b62a48ad7c5ec5993c8230c6dafb61c341ceee811ebf1"},
