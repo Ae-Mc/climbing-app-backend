@@ -31,7 +31,7 @@ class User(Base, SQLAlchemyBaseUserTable):
     last_name = Column(String(length=100), nullable=False)
     created_at = Column(DateTime, default=datetime.now, nullable=False)
 
-    routes: "Route" = relationship("route", back_populates="uploader")
+    routes: "Route" = relationship("Route", back_populates="uploader")
     oauth_accounts = relationship("OAuthAccount")
 
 
