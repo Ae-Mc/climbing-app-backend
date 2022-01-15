@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "climbing"
+version = "0.1.0"
+description = ""
+authors = ["Alexandr Makurin <ae_mc@mail.ru>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.71.0"
+pydantic = "^1.9.0"
+fastapi-users = {extras = ["oauth", "sqlalchemy2"], version = "^9.2.1"}
+aiosqlite = "^0.17.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+uvicorn = "^0.17.0"
+black = "^21.12b0"
+pylint = "^2.12.2"
+mypy = "^0.931"
+pyright = "^0.0.13"
+neovim = {version = "^0.3.1", optional = true}
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
