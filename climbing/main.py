@@ -20,16 +20,3 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# @app.post("/test")
-# def test(
-#     model: SomeModel = Body(
-#         ...,
-#         description="Должна передаваться в виде строки, которая в"
-#         " дальнейшем парситься в JSON-объект с помощью json.loads."
-#         " Для более подробного описания см. **SomeModel**.",
-#     ),
-#     token: str = Depends(auth_schema),
-# ):
-#     """Function for testing purposes"""
-#     return f"Ok. Id is {model.id}. Token's value is '{token}'"
