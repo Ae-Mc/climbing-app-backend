@@ -1,12 +1,11 @@
 from enum import Enum
-from typing import List
 
 
 class ExtendedEnum(Enum):
     """Enum with additional values() method."""
 
     @classmethod
-    def values(cls) -> List:
+    def values(cls) -> list:
         """Returns list of values in Enum
 
         Returns:

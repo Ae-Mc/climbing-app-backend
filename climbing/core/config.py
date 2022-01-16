@@ -1,5 +1,4 @@
 from datetime import timedelta
-from typing import Optional
 
 from pydantic import BaseSettings, validator
 
@@ -14,7 +13,7 @@ class Settings(BaseSettings):
 
     @validator("SQLALCHEMY_DATABASE_URI", pre=True)
     @classmethod
-    def assemble_sqlalchemy_database_uri(cls, value: Optional[str]) -> str:
+    def assemble_sqlalchemy_database_uri(cls, value: str | None) -> str:
         """Sets value of attribute SQLALCHEMY_DATABASE_URI
 
         Args:

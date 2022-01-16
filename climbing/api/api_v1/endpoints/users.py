@@ -1,5 +1,3 @@
-from typing import List
-
 from fastapi import APIRouter
 from fastapi.param_functions import Depends
 from sqlalchemy.ext.asyncio.session import AsyncSession
@@ -17,7 +15,7 @@ router = APIRouter()
 
 @router.get(
     "",
-    response_model=List[PydanticUser],
+    response_model=list[PydanticUser],
     name="users:all_users",
     dependencies=[Depends(current_superuser)],
     responses={**responses.SUPERUSER_REQUIRED, **responses.LOGIN_REQUIRED},

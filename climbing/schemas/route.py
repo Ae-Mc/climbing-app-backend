@@ -1,5 +1,5 @@
 from datetime import date
-from typing import List, Optional
+
 from fastapi import UploadFile
 
 from pydantic import Field
@@ -22,7 +22,7 @@ class RouteBase(MultipartFormDataCompatibleModel):
     mark_color: str = Field(
         ..., min_length=4, max_length=100, title="Цвет меток трассы"
     )
-    author: Optional[str] = Field(
+    author: str | None = Field(
         None, min_length=0, max_length=150, title="Автор трассы"
     )
     description: str = Field(..., title="Описание трассы")
@@ -33,21 +33,21 @@ class RouteCreate(RouteBase):
     """Модель для создания трассы. Должна создаваться вручную (не может быть
     использована напрямую как параметр запроса)."""
 
-    images: List[UploadFile] = Field(...)
+    images: list[UploadFile] = Field(...)
 
 
 class RouteUpdate(RouteBase):
     """Модель для обновления трассы. Должна создаваться вручную (не может быть
     использована напрямую как параметр запроса)."""
 
-    images: List[UploadFile] = Field(...)
+    images: list[UploadFile] = Field(...)
 
 
 class Route(RouteBase):
     """Модель для хранения информации о трассе."""
 
     uploader: User = Field(..., title="Пользователь, загрузивший трассу")
-    images: List[Image] = Field([], title="Список изображений трассы")
+    images: list[Image] = Field([], title="Список изображений трассы")
 
     class Config:
         """Standard Config class from FastAPI"""
