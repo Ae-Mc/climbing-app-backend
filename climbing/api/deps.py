@@ -1,22 +1,4 @@
-from typing import AsyncGenerator, Generator
-from sqlalchemy.ext.asyncio.session import AsyncSession
-from fastapi import Header, status, HTTPException
-from climbing.db.session import SessionLocal
-
-
-async def get_database() -> AsyncGenerator[AsyncSession, None]:
-    """Creates new connection to database and automatically closes it after
-    using
-
-    Yields:
-        [AsyncSession]: database connection
-    """
-
-    database = SessionLocal()
-    try:
-        yield database
-    finally:
-        await database.close()
+from fastapi import Header, HTTPException, status
 
 
 def multipart_form_data(content_type: str = Header(...)):

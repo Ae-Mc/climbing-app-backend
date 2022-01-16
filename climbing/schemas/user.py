@@ -12,6 +12,9 @@ class User(models.BaseUser, models.BaseOAuthAccountMixin):
     last_name: str
     created_at: datetime | None
 
+    class Config:  # pylint: disable=missing-class-docstring
+        orm_mode = True
+
 
 class UserCreate(models.BaseUserCreate):
     """User's creation pydantic scheme"""

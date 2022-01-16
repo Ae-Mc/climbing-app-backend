@@ -15,13 +15,17 @@ from climbing.schemas.user import AccessToken as AccessTokenSchema
 from climbing.schemas.user import UserDB
 
 engine = create_async_engine(settings.SQLALCHEMY_DATABASE_URI)
-SessionLocal = sessionmaker(
-    bind=engine, autocommit=False, autoflush=False, class_=AsyncSession
+async_session_maker = sessionmaker(
+    bind=engine,
+    autocommit=False,
+    autoflush=False,
+    expire_on_commit=False,
+    class_=AsyncSession,
 )
 
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
-    async with SessionLocal() as session:
+    async with async_session_maker() as session:
         return session
 
 
