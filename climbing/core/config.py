@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     SQLALCHEMY_DATABASE_URI: str = None
     AUTH_TOKEN_ENDPOINT_URL: str = f"{API_V1_STR}/auth/login"
+    MEDIA_ROOT: str = "media"
 
     @validator("SQLALCHEMY_DATABASE_URI", pre=True)
     @classmethod
