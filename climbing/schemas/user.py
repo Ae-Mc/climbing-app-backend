@@ -2,6 +2,7 @@ from datetime import datetime
 
 from fastapi_users import models
 from fastapi_users.authentication.strategy.db import BaseAccessToken
+from pydantic import BaseModel
 
 
 class User(models.BaseUser, models.BaseOAuthAccountMixin):
@@ -37,3 +38,10 @@ class UserDB(User, models.BaseUserDB):
 
 class AccessToken(BaseAccessToken):
     """Access token pydantic model"""
+
+
+class RouteUploader(BaseModel):
+    id: str
+    username: str
+    first_name: str
+    last_name: str

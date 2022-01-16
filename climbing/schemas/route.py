@@ -1,15 +1,14 @@
 from datetime import date
 
 from fastapi import UploadFile
-
-from pydantic import Field
+from pydantic import Field, validator
 
 from .category import Category
 from .image import Image
 from .multipart_form_data_compatible_model import (
     MultipartFormDataCompatibleModel,
 )
-from .user import User
+from .user import RouteUploader
 
 
 class RouteBase(MultipartFormDataCompatibleModel):
@@ -35,6 +34,13 @@ class RouteCreate(RouteBase):
 
     images: list[UploadFile] = Field(...)
 
+    @validator("images", each_item=True)
+    @classmethod
+    def validate_image(cls, image: UploadFile):
+        if image.content_type.split("/")[0] != "image":
+            raise ValueError("Must have MIME-type image/*")
+        return image
+
 
 class RouteUpdate(RouteBase):
     """Модель для обновления трассы. Должна создаваться вручную (не может быть
@@ -46,7 +52,9 @@ class RouteUpdate(RouteBase):
 class Route(RouteBase):
     """Модель для хранения информации о трассе."""
 
-    uploader: User = Field(..., title="Пользователь, загрузивший трассу")
+    uploader: RouteUploader = Field(
+        ..., title="Пользователь, загрузивший трассу"
+    )
     images: list[Image] = Field([], title="Список изображений трассы")
 
     class Config:
