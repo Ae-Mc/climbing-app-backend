@@ -7,14 +7,27 @@ from fastapi import Header, HTTPException, UploadFile, status
 from climbing.core.config import settings
 
 
-class FileStorage:
-    def __init__(self) -> None:
-        if not path.exists(settings.MEDIA_ROOT):
-            makedirs(settings.MEDIA_ROOT)
+class FileStorage:  # pylint: disable=too-few-public-methods
+    """Class for managing file storage
+
+    Attributes:
+        root (str): path to root folder of file storage
+    """
+    root: str
+
+    def __init__(self, root: str = settings.MEDIA_ROOT) -> None:
+        self.root = root
+        if not path.exists(root):
+            makedirs(root)
 
     def save(self, file: UploadFile) -> str:
+        """Saves file and returns path to it (join(root, generated_filename))
+
+        Params:
+            file (UploadFile): file
+        """
         filename = uuid4().hex + path.splitext(file.filename)[1]
-        full_filename = path.join(settings.MEDIA_ROOT, filename)
+        full_filename = path.join(self.root, filename)
         with open(full_filename, "wb") as out_file:
             copyfileobj(file.file, out_file)
         return full_filename
