@@ -6,26 +6,27 @@ authors = ["Alexandr Makurin <ae_mc@mail.ru>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.10"
-fastapi = "^0.71.0"
-pydantic = "^1.9.0"
-fastapi-users = {extras = ["oauth", "sqlalchemy2"], version = "^9.2.2"}
 aiosqlite = "^0.17.0"
+alembic = "^1.7.5"
+pydantic = "^1.9.0"
+fastapi = "^0.71.0"
+fastapi-users = {extras = ["oauth", "sqlalchemy2"], version = "^9.2.2"}
+python = "^3.10"
 # Start of neovim dependencies
 pynvim = {version = "^0.4.3", optional = true}
 pyright = {version = "^0.0.13", optional = true}
 # End of neovim dependencies
+SQLAlchemy = {extras = ["mypy"], version = "^1.4.31"}
 SQLAlchemy-Utils = "^0.38.2"
-alembic = "^1.7.5"
 
 [tool.poetry.dev-dependencies]
+black = "^21.12b0"
+flake8 = "^4.0.1"
+mypy = "^0.931"
+pycodestyle = "^2.8.0"
+pylint = "^2.12.2"
 pytest = "^5.2"
 uvicorn = "^0.17.0"
-black = "^21.12b0"
-pylint = "^2.12.2"
-mypy = "^0.931"
-flake8 = "^4.0.1"
-pycodestyle = "^2.8.0"
 
 [tool.poetry.extras]
 neovim = ["pynvim", "pyright"]
