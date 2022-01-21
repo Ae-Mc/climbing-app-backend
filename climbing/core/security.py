@@ -38,7 +38,7 @@ def get_strategy(
     )
 
 
-auth_backend = AuthenticationBackend(
+auth_backend = AuthenticationBackend[UserCreate, UserDB](
     name="bearer_database",
     transport=bearer_transport,
     get_strategy=get_strategy,

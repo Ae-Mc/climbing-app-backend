@@ -1,5 +1,3 @@
-from typing import AsyncGenerator
-
 from fastapi import Depends, Request
 from fastapi_users.manager import BaseUserManager
 
@@ -16,20 +14,18 @@ class UserManager(BaseUserManager[UserCreate, UserDB]):
     reset_password_token_secret = SECRET
     verification_token_secret = SECRET
 
-    async def on_after_register(
-        self, user: UserDB, request: Request = None
-    ) -> None:
+    async def on_after_register(self, user: UserDB, _: Request = None) -> None:
         print(f"User {user.username} has registered. His id: {user.id}")
 
     async def on_after_forgot_password(
-        self, user: UserDB, token: str, request: Request = None
+        self, user: UserDB, token: str, _: Request = None
     ):
         print(
             f"User {user.id} has forgot their password. Reset token: {token}"
         )
 
     async def on_after_request_verify(
-        self, user: UserDB, token: str, request: Request = None
+        self, user: UserDB, token: str, _: Request = None
     ):
         print(
             f"Verification requested for user {user.id}."
@@ -37,12 +33,12 @@ class UserManager(BaseUserManager[UserCreate, UserDB]):
         )
 
 
-async def get_user_manager(
+def get_user_manager(
     user_db=Depends(get_user_db),
-) -> AsyncGenerator[UserManager, None]:
+) -> UserManager:
     """Returns UserManager instance
 
     Returns:
-        AsyncGenerator[UserManager]: UserManager
+        UserManager: UserManager
     """
-    yield UserManager(user_db)
+    return UserManager(user_db)

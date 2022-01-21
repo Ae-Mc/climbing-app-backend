@@ -3,12 +3,13 @@ from datetime import timedelta
 from pydantic import BaseSettings, validator
 
 
+# pylint: disable=too-few-public-methods
 class Settings(BaseSettings):
     """Class for storing app settings"""
 
     ACCESS_TOKEN_EXPIRE_TIME = timedelta(hours=1)
     API_V1_STR: str = "/api/v1"
-    SQLALCHEMY_DATABASE_URI: str = None
+    SQLALCHEMY_DATABASE_URI: str | None = None
     AUTH_TOKEN_ENDPOINT_URL: str = f"{API_V1_STR}/auth/login"
     MEDIA_ROOT: str = "media"
 

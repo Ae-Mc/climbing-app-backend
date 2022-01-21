@@ -1,10 +1,10 @@
 from datetime import date
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from fastapi.exceptions import RequestValidationError
-from fastapi_users_db_sqlalchemy import AsyncSession
 from pydantic import ValidationError
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from climbing import models, schemas
 from climbing.api.deps import FileStorage
@@ -17,6 +17,7 @@ router = APIRouter()
 
 @router.get("", response_model=list[schemas.Route], name="routes:all")
 async def routes(session: AsyncSession = Depends(get_async_session)):
+    "Получение списка всех трасс"
     statement = select(models.Route)
     return (await session.execute(statement)).scalars().all()
 
@@ -39,6 +40,7 @@ async def create_route(
     session: AsyncSession = Depends(get_async_session),
     file_storage: FileStorage = Depends(),
 ):
+    "Создание трассы"
     try:
         route = schemas.RouteCreate(
             name=name,
