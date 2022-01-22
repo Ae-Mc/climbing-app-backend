@@ -1,4 +1,4 @@
-from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
+from typing import Any, Generic, Type, TypeVar
 
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
@@ -23,7 +23,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     async def get(
         self, database: AsyncSession, row_id: int
-    ) -> Optional[ModelType]:
+    ) -> ModelType | None:
         """Get single row by id
 
         Args:
@@ -31,18 +31,18 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             row_id (int): row id
 
         Returns:
-            Optional[ModelType]: row with id == row_id. Could be None
+            ModelType | None: row with id == row_id. Could be None
         """
-        return await database.get(self.model, row_id, options=(selectinload))
+        return await database.get(self.model, row_id, options=[selectinload])
 
-    async def get_all(self, database: AsyncSession) -> List[ModelType]:
+    async def get_all(self, database: AsyncSession) -> list[ModelType]:
         """Get all rows
 
         Args:
             database (Session): database connection
 
         Returns:
-            List[ModelType]: list of rows
+            list[ModelType]: list of rows
         """
         return database.query(self.model).all()
 
@@ -70,14 +70,14 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         database: AsyncSession,
         *,
         db_entity: ModelType,
-        new_entity: Union[UpdateSchemaType, Dict[str, Any]]
+        new_entity: UpdateSchemaType | dict[str, Any]
     ) -> ModelType:
         """Update database row
 
         Args:
             database (Session): database connection
             db_entity (ModelType): current row value
-            new_entity (Union[UpdateSchemaType, Dict[str, Any]]): new row value
+            new_entity (UpdateSchemaType | dict[str, Any]): new row value
                 or fields to be updated
 
         Returns:
@@ -98,7 +98,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     def remove(
         self, database: AsyncSession, *, row_id: int
-    ) -> Optional[ModelType]:
+    ) -> ModelType | None:
         """Removes single row from database
 
         Args:
