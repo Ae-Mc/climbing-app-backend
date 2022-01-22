@@ -14,6 +14,6 @@ class RouteImage(Base):
     """Table for storing Route to image relationship"""
 
     route_id = Column(ForeignKey("route.id"), nullable=False)
-    route: "Route" = relationship("Route", back_populates="images")
+    route = relationship("Route")
     image_id = Column(ForeignKey("file.id"), nullable=False)
-    image: "File" = relationship("File")
+    image = relationship("File")

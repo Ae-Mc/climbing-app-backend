@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime
 
 from sqlalchemy import Column, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
@@ -13,5 +13,6 @@ class File(Base):
 
     url = Column(URLType, nullable=False)
     uploader_id = Column(ForeignKey("user.id"), nullable=False)
-    uploader: User = relationship(User)
-    created_at = Column(DateTime, default=date.today, nullable=False)
+    uploader = relationship(User)
+
+    created_at = Column(DateTime, default=datetime.now, nullable=False)

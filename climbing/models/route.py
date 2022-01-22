@@ -5,11 +5,10 @@ from sqlalchemy.orm import relationship
 
 from climbing.db.base_class import Base
 from climbing.models.route_image import RouteImage
-from climbing.models.user import User
 from climbing.schemas import Category
 
 
-class Route(Base):
+class Route(Base):  # pylint: disable=too-few-public-methods
     """Table for storing routes"""
 
     name = Column(String(length=150), nullable=False)
@@ -17,7 +16,13 @@ class Route(Base):
     mark_color = Column(String(length=150), nullable=False)
     author = Column(String(length=150), nullable=False)
     uploader_id = Column(ForeignKey("user.id"), nullable=False)
-    uploader: User = relationship("User", back_populates="routes")
+    uploader = relationship("User", back_populates="routes")
     description = Column(String(length=2000), nullable=False)
     creation_date = Column(Date, default=date.today, nullable=False)
-    images: RouteImage = relationship("RouteImage", back_populates="route")
+    images = relationship(
+        "File",
+        secondary=RouteImage.__tablename__,
+        primaryjoin="Route.id == RouteImage.route_id",
+        secondaryjoin="RouteImage.image_id == File.id",
+        viewonly=True,
+    )
