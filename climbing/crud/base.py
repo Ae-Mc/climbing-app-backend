@@ -1,8 +1,10 @@
 from typing import Any, Generic, Type, TypeVar
+from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
 from climbing.db.base_class import Base
@@ -22,50 +24,50 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.model = model
 
     async def get(
-        self, database: AsyncSession, row_id: int
+        self, database: AsyncSession, row_id: UUID
     ) -> ModelType | None:
         """Get single row by id
 
         Args:
             database (Session): database connection
-            row_id (int): row id
+            row_id (UUID): row id
 
         Returns:
             ModelType | None: row with id == row_id. Could be None
         """
         return await database.get(self.model, row_id, options=[selectinload])
 
-    async def get_all(self, database: AsyncSession) -> list[ModelType]:
+    async def get_all(self, session: AsyncSession) -> list[ModelType]:
         """Get all rows
 
         Args:
-            database (Session): database connection
+            session (Session): database connection
 
         Returns:
             list[ModelType]: list of rows
         """
-        return database.query(self.model).all()
+        return (await session.execute(select(self.model))).scalars().all()
 
-    def create(
-        self, database: AsyncSession, entity: CreateSchemaType
+    async def create(
+        self, session: AsyncSession, entity: CreateSchemaType
     ) -> ModelType:
         """Creates new row in database
 
         Args:
-            database (Session): database connection
+            session (Session): database connection
             entity (CreateSchemaType): row that will be added
 
         Returns:
             ModelType:
         """
         entity_data = jsonable_encoder(entity)
-        db_entity = self.model(**entity_data)
-        database.add(db_entity)
-        database.commit()
-        database.refresh(db_entity)
+        db_entity = self.model(**entity_data)  # type: ignore
+        session.add(db_entity)
+        await session.commit()
+        await session.refresh(db_entity)
         return db_entity
 
-    def update(
+    async def update(
         self,
         database: AsyncSession,
         *,
@@ -92,24 +94,24 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             if field in update_data:
                 setattr(db_entity, field, entity_data[field])
         database.add(db_entity)
-        database.commit()
-        database.refresh(db_entity)
+        await database.commit()
+        await database.refresh(db_entity)
         return db_entity
 
-    def remove(
-        self, database: AsyncSession, *, row_id: int
+    async def remove(
+        self, database: AsyncSession, *, row_id: UUID
     ) -> ModelType | None:
         """Removes single row from database
 
         Args:
             database (Session): database connection
-            row_id (int): row id
+            row_id (UUID): row id
 
         Returns:
             None: if row with id == row_id not found
             ModelType: if row successfully removed
         """
-        entity = database.get(self.model, row_id)
-        database.delete(entity)
-        database.commit()
+        entity = await database.get(self.model, row_id)
+        await database.delete(entity)
+        await database.commit()
         return entity
