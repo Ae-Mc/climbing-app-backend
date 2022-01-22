@@ -24,18 +24,18 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.model = model
 
     async def get(
-        self, database: AsyncSession, row_id: UUID
+        self, session: AsyncSession, row_id: UUID
     ) -> ModelType | None:
         """Get single row by id
 
         Args:
-            database (Session): database connection
+            session (Session): database connection
             row_id (UUID): row id
 
         Returns:
             ModelType | None: row with id == row_id. Could be None
         """
-        return await database.get(self.model, row_id, options=[selectinload])
+        return await session.get(self.model, row_id, options=[selectinload])
 
     async def get_all(self, session: AsyncSession) -> list[ModelType]:
         """Get all rows
@@ -69,7 +69,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     async def update(
         self,
-        database: AsyncSession,
+        session: AsyncSession,
         *,
         db_entity: ModelType,
         new_entity: UpdateSchemaType | dict[str, Any]
@@ -77,7 +77,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         """Update database row
 
         Args:
-            database (Session): database connection
+            session (Session): database connection
             db_entity (ModelType): current row value
             new_entity (UpdateSchemaType | dict[str, Any]): new row value
                 or fields to be updated
@@ -93,25 +93,25 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         for field in entity_data:
             if field in update_data:
                 setattr(db_entity, field, entity_data[field])
-        database.add(db_entity)
-        await database.commit()
-        await database.refresh(db_entity)
+        session.add(db_entity)
+        await session.commit()
+        await session.refresh(db_entity)
         return db_entity
 
     async def remove(
-        self, database: AsyncSession, *, row_id: UUID
+        self, session: AsyncSession, *, row_id: UUID
     ) -> ModelType | None:
         """Removes single row from database
 
         Args:
-            database (Session): database connection
+            session (Session): database connection
             row_id (UUID): row id
 
         Returns:
             None: if row with id == row_id not found
             ModelType: if row successfully removed
         """
-        entity = await database.get(self.model, row_id)
-        await database.delete(entity)
-        await database.commit()
+        entity = await session.get(self.model, row_id)
+        await session.delete(entity)
+        await session.commit()
         return entity
