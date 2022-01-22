@@ -142,3 +142,6 @@ cython_debug/
 
 # sensitive info
 private.*
+
+# site media files
+/media
