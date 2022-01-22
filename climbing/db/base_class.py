@@ -1,12 +1,12 @@
 from uuid import uuid4
 
-from sqlalchemy import Column, Integer, MetaData
+from sqlalchemy import Column, MetaData
 from sqlalchemy.orm import as_declarative, declared_attr
 from sqlalchemy_utils import UUIDType
 
 
 @as_declarative()
-class Base:
+class Base:  # pylint: disable=too-few-public-methods
     """Base class for any database table model
 
     Attributes:
