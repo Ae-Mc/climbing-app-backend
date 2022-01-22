@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 
 from fastapi_users import models
 from fastapi_users.authentication.strategy.db import BaseAccessToken
@@ -13,7 +14,8 @@ class User(models.BaseUser, models.BaseOAuthAccountMixin):
     last_name: str
     created_at: datetime | None
 
-    class Config:  # pylint: disable=missing-class-docstring
+    # pylint: disable=too-few-public-methods,missing-class-docstring
+    class Config:
         orm_mode = True
 
 
@@ -41,7 +43,11 @@ class AccessToken(BaseAccessToken):
 
 
 class RouteUploader(BaseModel):
-    id: str
+    id: UUID
     username: str
     first_name: str
     last_name: str
+
+    # pylint: disable=too-few-public-methods,missing-class-docstring
+    class Config:
+        orm_mode = True

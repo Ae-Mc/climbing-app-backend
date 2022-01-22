@@ -1,7 +1,11 @@
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 
 
 class Image(BaseModel):
     """Модель для хранения изображений."""
 
-    url: HttpUrl = Field(..., title="URL-адрес изображения")
+    url: str = Field(..., title="URL-адрес изображения")
+
+    # pylint: disable=too-few-public-methods,missing-class-docstring
+    class Config:
+        orm_mode = True

@@ -1,13 +1,13 @@
 from datetime import date
+from uuid import UUID
 
 from fastapi import UploadFile
 from pydantic import Field, validator
 
 from .category import Category
 from .image import Image
-from .multipart_form_data_compatible_model import (
-    MultipartFormDataCompatibleModel,
-)
+from .multipart_form_data_compatible_model import \
+    MultipartFormDataCompatibleModel
 from .user import RouteUploader
 
 
@@ -33,6 +33,9 @@ class RouteCreate(RouteBase):
     использована напрямую как параметр запроса)."""
 
     images: list[UploadFile] = Field(...)
+    uploader: RouteUploader = Field(
+        ..., title="Пользователь, загрузивший трассу"
+    )
 
     @validator("images", each_item=True)
     @classmethod
@@ -62,4 +65,4 @@ class Route(RouteBase):
 
         orm_mode = True
 
-    id: int = Field(..., ge=1, title="ID трассы")
+    id: UUID = Field(..., title="ID трассы")
