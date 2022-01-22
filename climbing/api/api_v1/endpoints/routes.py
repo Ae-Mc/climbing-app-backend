@@ -1,16 +1,18 @@
 from datetime import date
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
-from fastapi.exceptions import RequestValidationError
+from fastapi import APIRouter, Depends, File, Form, Path, UploadFile
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import HTTPException, RequestValidationError
 from pydantic import ValidationError
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from climbing import models, schemas
-from climbing.api.deps import FileStorage
 from climbing.core import responses
 from climbing.core.security import current_active_user
+from climbing.crud import route as crud_route
 from climbing.db.session import get_async_session
+from climbing.schemas.user import RouteUploader
 
 router = APIRouter()
 
@@ -18,13 +20,44 @@ router = APIRouter()
 @router.get("", response_model=list[schemas.Route], name="routes:all")
 async def routes(session: AsyncSession = Depends(get_async_session)):
     "Получение списка всех трасс"
-    statement = select(models.Route)
-    return (await session.execute(statement)).scalars().all()
+    return jsonable_encoder(await crud_route.get_all(session))
+
+
+@router.get("/{route_id}", response_model=schemas.Route, name="routes:route")
+async def route(
+    route_id: UUID = Path(...),
+    session: AsyncSession = Depends(get_async_session),
+):
+    "Получение трассы"
+    return jsonable_encoder(await crud_route.get(session, route_id))
+
+
+@router.delete(
+    "/{route_id}",
+    name="routes:delete_route",
+    responses=responses.LOGIN_REQUIRED,
+)
+async def delete_route(
+    route_id: UUID = Path(...),
+    user: models.User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    "Удаление трассы"
+    route_instance = await crud_route.get(session, route_id)
+    if route_instance:
+        if route_instance.uploader_id == user.id or user.is_superuser:
+            return jsonable_encoder(
+                await crud_route.remove(session, row_id=route_id)
+            )
+        raise HTTPException(
+            403, detail="Вы не создатель этой трассы и не администратор"
+        )
+    raise HTTPException(404)
 
 
 @router.post(
     "",
-    response_model=list[schemas.Route],
+    response_model=schemas.Route,
     name="routes:new",
     responses=responses.LOGIN_REQUIRED,
 )
@@ -38,11 +71,10 @@ async def create_route(
     images: list[UploadFile] = File([], media_type="image/*"),
     user: models.User = Depends(current_active_user),
     session: AsyncSession = Depends(get_async_session),
-    file_storage: FileStorage = Depends(),
 ):
     "Создание трассы"
     try:
-        route = schemas.RouteCreate(
+        route_instance = schemas.RouteCreate(
             name=name,
             category=category,
             mark_color=mark_color,
@@ -50,7 +82,11 @@ async def create_route(
             description=description,
             creation_date=creation_date,
             images=images,
+            uploader=RouteUploader.from_orm(user),
         )
+        created_route = jsonable_encoder(
+            await crud_route.create(session, route_instance)
+        )
+        return created_route
     except ValidationError as err:
         raise RequestValidationError(err.raw_errors) from err
-    return None
