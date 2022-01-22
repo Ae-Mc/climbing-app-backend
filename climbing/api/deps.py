@@ -1,5 +1,6 @@
-from os import makedirs, path
+from os import makedirs, path, remove
 from shutil import copyfileobj
+from urllib.parse import urljoin
 from uuid import uuid4
 
 from fastapi import Header, HTTPException, UploadFile, status
@@ -27,10 +28,17 @@ class FileStorage:  # pylint: disable=too-few-public-methods
             file (UploadFile): file
         """
         filename = uuid4().hex + path.splitext(file.filename)[1]
-        full_filename = path.join(self.root, filename)
+        # Use unix separators
+        full_filename = urljoin(self.root + '/', filename)
         with open(full_filename, "wb") as out_file:
             copyfileobj(file.file, out_file)
         return full_filename
+
+    def remove(self, filename: str) -> None:
+        remove(filename)
+
+    def remove_relative(self, filename: str) -> None:
+        remove(path.join(self.root, filename))
 
 
 def multipart_form_data(content_type: str = Header(...)):
