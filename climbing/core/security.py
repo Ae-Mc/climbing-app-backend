@@ -12,14 +12,8 @@ from fastapi_users.authentication.strategy.db import (
 
 from climbing.core.config import settings
 from climbing.core.user_manager import get_user_manager
+from climbing.db.models.user import AccessToken, User, UserCreate, UserUpdate
 from climbing.db.session import get_access_token_db
-from climbing.schemas.user import (
-    AccessToken,
-    User,
-    UserCreate,
-    UserDB,
-    UserUpdate,
-)
 
 bearer_transport = BearerTransport(settings.AUTH_TOKEN_ENDPOINT_URL)
 
@@ -38,7 +32,7 @@ def get_strategy(
     )
 
 
-auth_backend = AuthenticationBackend[UserCreate, UserDB](
+auth_backend = AuthenticationBackend[UserCreate, User](
     name="bearer_database",
     transport=bearer_transport,
     get_strategy=get_strategy,
@@ -48,7 +42,7 @@ fastapi_users = FastAPIUsers(
     auth_backends=[auth_backend],
     get_user_manager=get_user_manager,
     user_create_model=UserCreate,
-    user_db_model=UserDB,
+    user_db_model=User,
     user_model=User,
     user_update_model=UserUpdate,
 )

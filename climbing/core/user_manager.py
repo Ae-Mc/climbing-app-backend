@@ -1,31 +1,31 @@
 from fastapi import Depends, Request
 from fastapi_users.manager import BaseUserManager
 
+from climbing.db.models import User, UserCreate
 from climbing.db.session import get_user_db
-from climbing.schemas import UserCreate, UserDB
 
 from .private import SECRET
 
 
-class UserManager(BaseUserManager[UserCreate, UserDB]):
+class UserManager(BaseUserManager[UserCreate, User]):
     """User manager from fastapi_users"""
 
-    user_db_model = UserDB
+    user_db_model = User
     reset_password_token_secret = SECRET
     verification_token_secret = SECRET
 
-    async def on_after_register(self, user: UserDB, _: Request = None) -> None:
+    async def on_after_register(self, user: User, _: Request = None) -> None:
         print(f"User {user.username} has registered. His id: {user.id}")
 
     async def on_after_forgot_password(
-        self, user: UserDB, token: str, _: Request = None
+        self, user: User, token: str, _: Request = None
     ):
         print(
             f"User {user.id} has forgot their password. Reset token: {token}"
         )
 
     async def on_after_request_verify(
-        self, user: UserDB, token: str, _: Request = None
+        self, user: User, token: str, _: Request = None
     ):
         print(
             f"Verification requested for user {user.id}."
