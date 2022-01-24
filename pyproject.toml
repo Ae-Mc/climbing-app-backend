@@ -10,14 +10,15 @@ aiosqlite = "^0.17.0"
 alembic = "^1.7.5"
 pydantic = "^1.9.0"
 fastapi = "^0.71.0"
-fastapi-users = {extras = ["oauth", "sqlalchemy2"], version = "^9.2.2"}
+fastapi-users = {extras = ["sqlalchemy2", "oauth"], version = "^9.2.2"}
 python = "^3.10"
 # Start of neovim dependencies
 pynvim = {version = "^0.4.3", optional = true}
 pyright = {version = "^0.0.13", optional = true}
 # End of neovim dependencies
-SQLAlchemy = {extras = ["mypy"], version = "^1.4.31"}
-SQLAlchemy-Utils = "^0.38.2"
+sqlmodel = "^0.0.6"
+SQLAlchemy = "^1.4.31"
+fastapi-users-db-sqlmodel = "^0.1.1"
 
 [tool.poetry.dev-dependencies]
 black = "^21.12b0"
