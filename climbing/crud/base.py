@@ -1,17 +1,14 @@
 from typing import Any, Generic, Type, TypeVar
-from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
-from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
+from sqlmodel import SQLModel
 
-from climbing.db.base_class import Base
-
-ModelType = TypeVar("ModelType", bound=Base)
-CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
-UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
+ModelType = TypeVar("ModelType", bound=SQLModel)
+CreateSchemaType = TypeVar("CreateSchemaType", bound=SQLModel)
+UpdateSchemaType = TypeVar("UpdateSchemaType", bound=SQLModel)
 
 
 class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
@@ -24,13 +21,13 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.model = model
 
     async def get(
-        self, session: AsyncSession, row_id: UUID
+        self, session: AsyncSession, row_id: int
     ) -> ModelType | None:
         """Get single row by id
 
         Args:
             session (Session): database connection
-            row_id (UUID): row id
+            row_id (int): row id
 
         Returns:
             ModelType | None: row with id == row_id. Could be None
@@ -99,13 +96,13 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return db_entity
 
     async def remove(
-        self, session: AsyncSession, *, row_id: UUID
+        self, session: AsyncSession, *, row_id: int
     ) -> ModelType | None:
         """Removes single row from database
 
         Args:
             session (Session): database connection
-            row_id (UUID): row id
+            row_id (int): row id
 
         Returns:
             None: if row with id == row_id not found

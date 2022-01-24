@@ -1,5 +1,4 @@
-from typing import Any, Dict, Type, Union, cast
-from uuid import UUID
+from typing import Any, Type
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -7,8 +6,7 @@ from sqlalchemy.orm import selectinload
 
 from climbing.api.deps import FileStorage
 from climbing.core.config import settings
-from climbing.models import File, Route, RouteImage
-from climbing.schemas.route import RouteCreate, RouteUpdate
+from climbing.db.models import Route, RouteCreate, RouteImage, RouteUpdate
 
 from .base import CRUDBase
 
@@ -19,7 +17,7 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
     def __init__(self, model: Type[Route] = Route) -> None:
         super().__init__(model)
 
-    async def get(self, session: AsyncSession, row_id: UUID) -> Route | None:
+    async def get(self, session: AsyncSession, row_id: int) -> Route | None:
         return (
             await session.execute(
                 select(Route)
@@ -46,30 +44,29 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
         self, session: AsyncSession, entity: RouteCreate
     ) -> Route:
         storage = FileStorage(settings.MEDIA_ROOT)
-        files: list[File] = []
-        for file in entity.images:
-            image_path = storage.save(file)
-            files.append(
-                File(  # type: ignore
-                    url=image_path, uploader_id=entity.uploader.id
-                )
-            )
-            session.add(files[-1])
+        images: list[RouteImage] = []
         entity_data = entity.dict(exclude={"images": True, "uploader": True})
-        db_route = self.model(  # type: ignore
+        route_instance = self.model(
             **entity_data,
             uploader_id=entity.uploader.id,
         )
-        session.add(db_route)
+        session.add(route_instance)
+        await session.refresh(route_instance)
+        for image in entity.images:
+            image_path = storage.save(image)
+            images.append(
+                RouteImage(
+                    url=image_path,
+                    uploader_id=entity.uploader.id,
+                    route_id=route_instance.id,
+                )
+            )
+            session.add(images[-1])
         await session.commit()
-        await session.refresh(db_route)
-        for file in files:
-            await session.refresh(file)
-            session.add(RouteImage(route_id=db_route.id, image_id=file.id))  # type: ignore
-        await session.commit()
-        await session.refresh(db_route)
-        route_instance = await self.get(session, cast(UUID, db_route.id))
+        route_instance = await self.get(session, route_instance.id)
         if route_instance is None:
+            for image in images:
+                storage.remove(image.url)
             raise IndexError("Can't find created route")
         return route_instance
 
@@ -78,44 +75,33 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
         session: AsyncSession,
         *,
         db_entity: Route,
-        new_entity: Union[RouteUpdate, Dict[str, Any]],
+        new_entity: RouteUpdate | dict[str, Any],
     ) -> Route:
         print(f"Old: {db_entity}\nNew: {new_entity}")
 
-    async def remove(self, session: AsyncSession, *, row_id: UUID) -> None:
-        route_instance = (
-            await session.execute(select(Route).where(Route.id == row_id))
+    async def remove(self, session: AsyncSession, *, row_id: int) -> None:
+        route_instance: Route | None = (
+            await session.execute(
+                select(Route)
+                .where(Route.id == row_id)
+                .options(selectinload("images"))
+            )
         ).scalar_one_or_none()
         if route_instance is None:
             return
-        route_images = (
-            (
-                await session.execute(
-                    select(RouteImage).where(RouteImage.route_id == row_id)
-                )
-            )
-            .scalars()
-            .all()
-        )
-        files: list[File] = (
-            (
-                await session.execute(
-                    select(File).where(
-                        File.id.in_(
-                            list(map(lambda x: x.image_id, route_images))
-                        )
-                    )
-                )
-            )
-            .scalars()
-            .all()
-        )
-        for image in route_images:
+        images: list[RouteImage] = route_instance.images
+        for image in images:
             await session.delete(image)
         storage = FileStorage(settings.MEDIA_ROOT)
-        for file in files:
-            storage.remove(file.url)  # type: ignore
-            await session.delete(file)
+        for image in images:
+            try:
+                storage.remove(image.url)
+            except FileNotFoundError:
+                print(
+                    f"File {image.url} associated with"
+                    f" route {route_instance.name} (id={route_instance.id})"
+                    f" not found"
+                )
         await session.delete(route_instance)
         await session.commit()
 
