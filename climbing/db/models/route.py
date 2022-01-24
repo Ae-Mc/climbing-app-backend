@@ -54,7 +54,7 @@ class RouteUpdate(RouteBase):
 class Route(RouteBase, table=True):
     """Модель для хранения информации о трассе."""
 
-    id: int = Field(..., title="ID трассы")
+    id: int = Field(..., title="ID трассы", primary_key=True)
     uploader_id: int = Field(
         ..., title="ID пользователя, загрузивший трассу", foreign_key="user.id"
     )
