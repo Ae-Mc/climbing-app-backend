@@ -1,18 +1,15 @@
 from typing import AsyncGenerator
 
 from fastapi import Depends
-from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
-from fastapi_users_db_sqlalchemy.access_token import (
-    SQLAlchemyAccessTokenDatabase,
+from fastapi_users_db_sqlmodel import SQLModelUserDatabaseAsync
+from fastapi_users_db_sqlmodel.access_token import (
+    SQLModelAccessTokenDatabaseAsync,
 )
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from climbing.core.config import settings
-from climbing.models.user import AccessToken as AccessTokenModel
-from climbing.models.user import OAuthAccount, User
-from climbing.schemas.user import AccessToken as AccessTokenSchema
-from climbing.schemas.user import UserDB
+from climbing.db.models.user import AccessToken, OAuthAccount, User
 
 engine = create_async_engine(settings.SQLALCHEMY_DATABASE_URI)
 async_session_maker = sessionmaker(
@@ -31,13 +28,11 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
 
 async def get_user_db(
     session: AsyncSession = Depends(get_async_session),
-) -> AsyncGenerator[SQLAlchemyUserDatabase, None]:
-    yield SQLAlchemyUserDatabase(UserDB, session, User, OAuthAccount)
+) -> AsyncGenerator[SQLModelUserDatabaseAsync, None]:
+    yield SQLModelUserDatabaseAsync(User, session, OAuthAccount)
 
 
 async def get_access_token_db(
     session: AsyncSession = Depends(get_async_session),
-) -> AsyncGenerator[SQLAlchemyAccessTokenDatabase, None]:
-    yield SQLAlchemyAccessTokenDatabase(
-        AccessTokenSchema, session, AccessTokenModel
-    )
+) -> AsyncGenerator[SQLModelAccessTokenDatabaseAsync, None]:
+    yield SQLModelAccessTokenDatabaseAsync(AccessToken, session)
