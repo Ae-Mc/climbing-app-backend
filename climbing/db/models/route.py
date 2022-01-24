@@ -1,7 +1,9 @@
 from datetime import date
 from typing import List
+from uuid import uuid4
 
 from fastapi import UploadFile
+from fastapi_users_db_sqlalchemy import UUID4
 from pydantic import validator
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -54,8 +56,10 @@ class RouteUpdate(RouteBase):
 class Route(RouteBase, table=True):
     """Модель для хранения информации о трассе."""
 
-    id: int = Field(..., title="ID трассы", primary_key=True)
-    uploader_id: int = Field(
+    id: UUID4 = Field(
+        title="ID трассы", primary_key=True, default_factory=uuid4
+    )
+    uploader_id: UUID4 = Field(
         ..., title="ID пользователя, загрузивший трассу", foreign_key="user.id"
     )
     uploader: User = Relationship()
