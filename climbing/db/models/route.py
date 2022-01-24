@@ -1,17 +1,16 @@
 from datetime import date
-from uuid import UUID
+from typing import List
 
 from fastapi import UploadFile
-from pydantic import Field, validator
+from pydantic import validator
+from sqlmodel import Field, Relationship, SQLModel
 
 from .category import Category
-from .image import Image
-from .multipart_form_data_compatible_model import \
-    MultipartFormDataCompatibleModel
-from .user import RouteUploader
+from .route_image import RouteImage
+from .user import RouteUploader, User
 
 
-class RouteBase(MultipartFormDataCompatibleModel):
+class RouteBase(SQLModel):
     """Модель для хранения информации о трассе."""
 
     name: str = Field(
@@ -49,20 +48,15 @@ class RouteUpdate(RouteBase):
     """Модель для обновления трассы. Должна создаваться вручную (не может быть
     использована напрямую как параметр запроса)."""
 
-    images: list[UploadFile] = Field(...)
+    images: list[UploadFile] | None = Field(None)
 
 
-class Route(RouteBase):
+class Route(RouteBase, table=True):
     """Модель для хранения информации о трассе."""
 
-    uploader: RouteUploader = Field(
-        ..., title="Пользователь, загрузивший трассу"
+    id: int = Field(..., title="ID трассы")
+    uploader_id: int = Field(
+        ..., title="ID пользователя, загрузивший трассу", foreign_key="user.id"
     )
-    images: list[Image] = Field([], title="Список изображений трассы")
-
-    class Config:
-        """Standard Config class from FastAPI"""
-
-        orm_mode = True
-
-    id: UUID = Field(..., title="ID трассы")
+    uploader: User = Relationship()
+    images: List[RouteImage] = Relationship(back_populates="route")
