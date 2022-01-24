@@ -3,7 +3,7 @@
 from .category import Category
 from .route import Route, RouteCreate, RouteUpdate
 from .route_image import RouteImage
-from .user import User, UserCreate, UserDB, UserUpdate
+from .user import User, UserCreate, UserUpdate
 
 __all__ = [
     "Category",
@@ -14,5 +14,4 @@ __all__ = [
     "User",
     "UserCreate",
     "UserUpdate",
-    "UserDB",
 ]
