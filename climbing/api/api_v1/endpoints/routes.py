@@ -7,23 +7,28 @@ from fastapi.exceptions import HTTPException, RequestValidationError
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from climbing import models, schemas
 from climbing.core import responses
 from climbing.core.security import current_active_user
 from climbing.crud import route as crud_route
+from climbing.db.models import (
+    Category,
+    Route,
+    RouteCreate,
+    RouteUploader,
+    User,
+)
 from climbing.db.session import get_async_session
-from climbing.schemas.user import RouteUploader
 
 router = APIRouter()
 
 
-@router.get("", response_model=list[schemas.Route], name="routes:all")
+@router.get("", response_model=list[Route], name="routes:all")
 async def routes(session: AsyncSession = Depends(get_async_session)):
     "Получение списка всех трасс"
     return jsonable_encoder(await crud_route.get_all(session))
 
 
-@router.get("/{route_id}", response_model=schemas.Route, name="routes:route")
+@router.get("/{route_id}", response_model=Route, name="routes:route")
 async def route(
     route_id: UUID = Path(...),
     session: AsyncSession = Depends(get_async_session),
@@ -39,7 +44,7 @@ async def route(
 )
 async def delete_route(
     route_id: UUID = Path(...),
-    user: models.User = Depends(current_active_user),
+    user: User = Depends(current_active_user),
     session: AsyncSession = Depends(get_async_session),
 ):
     "Удаление трассы"
@@ -57,24 +62,24 @@ async def delete_route(
 
 @router.post(
     "",
-    response_model=schemas.Route,
+    response_model=Route,
     name="routes:new",
     responses=responses.LOGIN_REQUIRED,
 )
 async def create_route(
     name: str = Form(..., min_length=1, max_length=150),
-    category: schemas.Category = Form(...),
+    category: Category = Form(...),
     mark_color: str = Form(..., min_length=4, max_length=100),
     author: str = Form(None, max_length=150),
     description: str = Form(...),
     creation_date: date = Form(...),
     images: list[UploadFile] = File([], media_type="image/*"),
-    user: models.User = Depends(current_active_user),
+    user: User = Depends(current_active_user),
     session: AsyncSession = Depends(get_async_session),
 ):
     "Создание трассы"
     try:
-        route_instance = schemas.RouteCreate(
+        route_instance = RouteCreate(
             name=name,
             category=category,
             mark_color=mark_color,

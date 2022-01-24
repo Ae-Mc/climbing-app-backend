@@ -6,16 +6,15 @@ from sqlalchemy.orm import selectinload
 
 from climbing.core import responses
 from climbing.core.security import current_superuser, fastapi_users
+from climbing.db.models import User
 from climbing.db.session import get_async_session
-from climbing.models.user import User
-from climbing.schemas.user import User as PydanticUser
 
 router = APIRouter()
 
 
 @router.get(
     "",
-    response_model=list[PydanticUser],
+    response_model=list[User],
     name="users:all_users",
     dependencies=[Depends(current_superuser)],
     responses={**responses.SUPERUSER_REQUIRED, **responses.LOGIN_REQUIRED},
