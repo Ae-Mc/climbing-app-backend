@@ -16,7 +16,7 @@ python = "^3.10"
 pynvim = {version = "^0.4.3", optional = true}
 pyright = {version = "^0.0.13", optional = true}
 # End of neovim dependencies
-sqlmodel = "^0.0.6"
+sqlmodel = {git = "https://github.com/Ae-Mc/sqlmodel", rev = "main"}
 SQLAlchemy = "^1.4.31"
 fastapi-users-db-sqlmodel = "^0.1.1"
 
