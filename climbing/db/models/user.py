@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List
 
 from fastapi_users import models
+from fastapi_users_db_sqlalchemy import UUID4
 from fastapi_users_db_sqlmodel import (
     Field,
     SQLModelBaseOAuthAccount,
@@ -39,23 +40,27 @@ class User(SQLModelBaseUserDB, __UserWithFullName, table=True):
 
 
 class UserCreate(
-    models.BaseUserCreate, __UserWithFullName, __UserWithUsername
+    __FullNameMixin, __UsernameMixin, models.CreateUpdateDictModel
 ):
-    """User's creation pydantic scheme"""
+    """User's creation scheme"""
 
+    email: str
+    password: str
 
 class UserUpdate(models.BaseUserUpdate, __UserWithFullName):
     """User's update pydantic scheme"""
 
 
 class UserScheme(
-    models.BaseOAuthAccountMixin,
-    models.BaseUserDB,
     __UserWithFullName,
     __UserWithUsername,
+    SQLModel,
 ):
     """User returning pydantic scheme"""
 
+    id: UUID4 | None
+    email: str
+    created_at: datetime | None
 
 class RouteUploader(__UserWithUsername, __UserWithFullName):
     id: int
