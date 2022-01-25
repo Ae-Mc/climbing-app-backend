@@ -57,6 +57,7 @@ async def delete_route(
 @router.post(
     "",
     response_model=RouteRead,
+    status_code=201,
     name="routes:new",
     responses=responses.LOGIN_REQUIRED,
 )

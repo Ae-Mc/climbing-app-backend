@@ -34,7 +34,7 @@ class RouteCreate(RouteBase):
     использована напрямую как параметр запроса)."""
 
     images: list[UploadFile] = Field(...)
-    uploader: UserScheme = Field(..., title="Пользователь, загрузивший трассу")
+    uploader: User = Field(..., title="Пользователь, загрузивший трассу")
 
     @validator("images", each_item=True)
     @classmethod
