@@ -1,4 +1,5 @@
 from fastapi import Depends, Request
+from fastapi_users import InvalidPasswordException
 from fastapi_users.manager import BaseUserManager
 
 from climbing.db.models import User, UserCreate
@@ -31,6 +32,15 @@ class UserManager(BaseUserManager[UserCreate, User]):
             f"Verification requested for user {user.id}."
             f" Verification token: {token}"
         )
+
+    async def validate_password(
+        self, password: str, user: UserCreate | User
+    ) -> None:
+        if len(password) < 8:
+            raise InvalidPasswordException(
+                "Пароль слишком короткий: минимум 8 символов"
+            )
+        return await super().validate_password(password, user)
 
 
 def get_user_manager(
