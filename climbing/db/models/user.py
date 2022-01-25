@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from fastapi_users import models
@@ -35,7 +35,9 @@ class User(SQLModelBaseUserDB, __UserWithFullName, table=True):
     username: str = Field(
         max_length=100, sa_column_kwargs={"unique": True, "index": True}
     )
-    created_at: datetime | None
+    created_at: datetime | None = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
     oauth_accounts: List[OAuthAccount] = Relationship()
 
 
