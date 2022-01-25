@@ -9,7 +9,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from .category import Category
 from .route_image import RouteImage
-from .user import RouteUploader, User
+from .user import User, UserScheme
 
 
 class RouteBase(SQLModel):
@@ -34,9 +34,7 @@ class RouteCreate(RouteBase):
     использована напрямую как параметр запроса)."""
 
     images: list[UploadFile] = Field(...)
-    uploader: RouteUploader = Field(
-        ..., title="Пользователь, загрузивший трассу"
-    )
+    uploader: UserScheme = Field(..., title="Пользователь, загрузивший трассу")
 
     @validator("images", each_item=True)
     @classmethod
@@ -64,3 +62,9 @@ class Route(RouteBase, table=True):
     )
     uploader: User = Relationship()
     images: List[RouteImage] = Relationship(back_populates="route")
+
+
+class RouteRead(RouteBase):
+    id: UUID4 = Field(title="ID трассы")
+    uploader: UserScheme
+    images: List[RouteImage] = []

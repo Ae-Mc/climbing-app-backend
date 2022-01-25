@@ -1,17 +1,17 @@
 """Module for storing pydantic schemas"""
 
 from .category import Category
-from .route import Route, RouteCreate, RouteUpdate
+from .route import Route, RouteCreate, RouteRead, RouteUpdate
 from .route_image import RouteImage
-from .user import RouteUploader, User, UserCreate, UserScheme, UserUpdate
+from .user import User, UserCreate, UserScheme, UserUpdate
 
 __all__ = [
     "Category",
     "Route",
     "RouteCreate",
     "RouteImage",
+    "RouteRead",
     "RouteUpdate",
-    "RouteUploader",
     "User",
     "UserCreate",
     "UserScheme",

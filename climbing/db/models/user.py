@@ -66,7 +66,3 @@ class UserScheme(
     id: UUID4 | None
     email: str
     created_at: datetime | None
-
-
-class RouteUploader(__UsernameMixin, __FullNameMixin, SQLModel):
-    id: UUID4
