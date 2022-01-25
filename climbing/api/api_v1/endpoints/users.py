@@ -1,13 +1,18 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 from fastapi.param_functions import Depends
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
 from climbing.core import responses
-from climbing.core.security import current_superuser, fastapi_users
-from climbing.db.models import User
-from climbing.db.models.user import UserScheme
+from climbing.core.security import (
+    current_superuser,
+    current_user,
+    fastapi_users,
+)
+from climbing.core.user_manager import UserManager, get_user_manager
+from climbing.crud.crud_route import route as crud_route
+from climbing.db.models import Route, User, UserScheme
 from climbing.db.session import get_async_session
 
 router = APIRouter()
@@ -26,6 +31,31 @@ async def read_users(
     """Список пользователей"""
     statement = select(User).options(selectinload(User.oauth_accounts))
     return (await async_session.execute(statement)).scalars().all()
+
+
+@router.delete(
+    "/me",
+    status_code=status.HTTP_204_NO_CONTENT,
+    name="users:delete_me",
+    responses=responses.LOGIN_REQUIRED,
+)
+async def delete_me(
+    async_session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_user),
+    user_manager: UserManager = Depends(get_user_manager),
+):
+    user_routes: list[Route] = (
+        (
+            await async_session.execute(
+                select(Route).where(Route.uploader_id == user.id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    for route in user_routes:
+        await crud_route.remove(async_session, row_id=route.id)
+    await user_manager.delete(user)
 
 
 router.include_router(fastapi_users.get_users_router())
