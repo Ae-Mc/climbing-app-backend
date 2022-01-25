@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import List
 from uuid import uuid4
 
@@ -62,9 +62,14 @@ class Route(RouteBase, table=True):
     )
     uploader: User = Relationship()
     images: List[RouteImage] = Relationship(back_populates="route")
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        title="Дата добавления трассы на сервер",
+    )
 
 
 class RouteRead(RouteBase):
     id: UUID4 = Field(title="ID трассы")
     uploader: UserScheme
     images: List[RouteImage] = []
+    created_at: datetime = Field(title="Дата добавления трассы на сервер")
