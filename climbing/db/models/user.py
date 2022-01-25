@@ -30,7 +30,7 @@ class _UsernameMixin(SQLModel):
 
 
 class User(_FullNameMixin, SQLModelBaseUserDB, table=True):
-    """User fetch pydantic model"""
+    """User model"""
 
     username: str = Field(
         max_length=100, sa_column_kwargs={"unique": True, "index": True}

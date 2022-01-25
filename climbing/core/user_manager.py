@@ -1,9 +1,14 @@
+from typing import Any
+
 from fastapi import Depends, Request
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_users import InvalidPasswordException
-from fastapi_users.manager import BaseUserManager
+from fastapi_users import password as password_module
+from fastapi_users.manager import BaseUserManager, UserAlreadyExists
 
 from climbing.db.models import User, UserCreate
 from climbing.db.session import get_user_db
+from climbing.db.user_database import UserDatabase
 
 from .private import SECRET
 
@@ -11,27 +16,110 @@ from .private import SECRET
 class UserManager(BaseUserManager[UserCreate, User]):
     """User manager from fastapi_users"""
 
+    user_db: UserDatabase
     user_db_model = User
     reset_password_token_secret = SECRET
     verification_token_secret = SECRET
 
-    async def on_after_register(self, user: User, _: Request = None) -> None:
-        print(f"User {user.username} has registered. His id: {user.id}")
+    async def authenticate(
+        self, credentials: OAuth2PasswordRequestForm
+    ) -> User | None:
+        user = await self.get_user_by_credentials(credentials)
+        if user is None:
+            # Run the hasher to mitigate timing attack
+            # Inspired from Django: https://code.djangoproject.com/ticket/20760
+            password_module.get_password_hash(credentials.password)
+            return None
 
-    async def on_after_forgot_password(
-        self, user: User, token: str, _: Request = None
-    ):
-        print(
-            f"User {user.id} has forgot their password. Reset token: {token}"
+        (
+            verified,
+            updated_password_hash,
+        ) = password_module.verify_and_update_password(
+            credentials.password, user.hashed_password
         )
+        if not verified:
+            return None
+        # Update password hash to a more robust one if needed
+        if updated_password_hash is not None:
+            user.hashed_password = updated_password_hash
+            await self.user_db.update(user)
 
-    async def on_after_request_verify(
-        self, user: User, token: str, _: Request = None
-    ):
-        print(
-            f"Verification requested for user {user.id}."
-            f" Verification token: {token}"
+        return user
+
+    async def get_user_by_credentials(
+        self, credentials: OAuth2PasswordRequestForm
+    ) -> User | None:
+        """Returns user, if exists, from OAuth сredentials
+
+        Here you can add e.g. phone number or username search.
+        """
+        user = await self.user_db.get_by_username(credentials.username)
+        if user is not None:
+            return user
+        # We can add any more tests using the same code
+        user = await self.user_db.get_by_email(credentials.username)
+        if user is not None:
+            return user
+        return None
+
+    async def create(
+        self,
+        user: UserCreate,
+        safe: bool = False,
+        request: Request | None = None,
+    ) -> User:
+        await self.validate_password(user.password, user)
+
+        await self.test_user_existence(user)
+
+        hashed_password = password_module.get_password_hash(user.password)
+        user_dict = (
+            user.create_update_dict()
+            if safe
+            else user.create_update_dict_superuser()
         )
+        db_user = self.user_db_model(
+            **user_dict, hashed_password=hashed_password
+        )
+        created_user = await self.user_db.create(db_user)
+
+        await self.on_after_register(created_user, request)
+
+        return created_user
+
+    async def test_user_existence(self, user: UserCreate) -> None:
+        """Tests if user with the same data as :param user: exists
+
+        :raises UserAlreadyExists: The user exists.
+        """
+        if await self.user_db.get_by_username(user.username) is not None:
+            raise UserAlreadyExists()
+        if await self.user_db.get_by_email(user.email) is not None:
+            raise UserAlreadyExists()
+
+    async def _update(self, user: User, update_dict: dict[str, Any]) -> User:
+        for field, value in update_dict.items():
+            await self._update_field(user, field, value)
+        return await self.user_db.update(user)
+
+    async def _update_field(self, user: User, field: str, value: Any) -> None:
+        if field == "username" and value != user.username:
+            existing_user = await self.user_db.get_by_username(value)
+            if existing_user is not None:
+                raise UserAlreadyExists()
+            user.username = value
+        elif field == "email" and value != user.email:
+            existing_user = await self.user_db.get_by_email(value)
+            if existing_user is not None:
+                raise UserAlreadyExists()
+            user.email = value
+            user.is_verified = False
+        elif field == "password":
+            await self.validate_password(value, user)
+            hashed_password = password_module.get_password_hash(value)
+            user.hashed_password = hashed_password
+        else:
+            setattr(user, field, value)
 
     async def validate_password(
         self, password: str, user: UserCreate | User
