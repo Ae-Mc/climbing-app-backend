@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 from climbing.core import responses
 from climbing.core.security import current_superuser, fastapi_users
 from climbing.db.models import User
+from climbing.db.models.user import UserScheme
 from climbing.db.session import get_async_session
 
 router = APIRouter()
@@ -14,7 +15,7 @@ router = APIRouter()
 
 @router.get(
     "",
-    response_model=list[User],
+    response_model=list[UserScheme],
     name="users:all_users",
     dependencies=[Depends(current_superuser)],
     responses={**responses.SUPERUSER_REQUIRED, **responses.LOGIN_REQUIRED},

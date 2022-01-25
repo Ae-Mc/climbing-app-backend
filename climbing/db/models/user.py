@@ -48,10 +48,13 @@ class UserCreate(_FullNameMixin, _UsernameMixin, models.CreateUpdateDictModel):
     password: str = Field(max_length=100)
 
 
-class UserUpdate(models.CreateUpdateDictModel, _FullNameMixin):
+class UserUpdate(models.CreateUpdateDictModel):
     """User's update scheme"""
 
     password: str | None = Field(default=None, max_length=100)
+    first_name: str | None = Field(default=None, max_length=100)
+    last_name: str | None = Field(default=None, max_length=100)
+    oauth_accounts: List[OAuthAccount] | None = None
 
 
 class UserScheme(
