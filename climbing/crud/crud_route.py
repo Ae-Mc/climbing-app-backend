@@ -52,15 +52,11 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
             uploader_id=entity.uploader.id,
         )
         session.add(route_instance)
-        await session.refresh(route_instance)
+        await session.commit()
+        await session.refresh(route_instance, attribute_names={"id"})
         for image in entity.images:
-            image_path = storage.save(image)
             images.append(
-                RouteImage(
-                    url=image_path,
-                    uploader_id=entity.uploader.id,
-                    route_id=route_instance.id,
-                )
+                RouteImage(url=storage.save(image), route=route_instance)
             )
             session.add(images[-1])
         await session.commit()
