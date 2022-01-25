@@ -20,16 +20,16 @@ class OAuthAccount(SQLModelBaseOAuthAccount, table=True):
     """Table for storing OAuth accounts for each user"""
 
 
-class __FullNameMixin(SQLModel):
+class _FullNameMixin(SQLModel):
     first_name: str = Field(max_length=100)
     last_name: str = Field(max_length=100)
 
 
-class __UsernameMixin(SQLModel):
+class _UsernameMixin(SQLModel):
     username: str = Field(max_length=100)
 
 
-class User(__FullNameMixin, SQLModelBaseUserDB, table=True):
+class User(_FullNameMixin, SQLModelBaseUserDB, table=True):
     """User fetch pydantic model"""
 
     username: str = Field(
@@ -41,24 +41,22 @@ class User(__FullNameMixin, SQLModelBaseUserDB, table=True):
     oauth_accounts: List[OAuthAccount] = Relationship()
 
 
-class UserCreate(
-    __FullNameMixin, __UsernameMixin, models.CreateUpdateDictModel
-):
+class UserCreate(_FullNameMixin, _UsernameMixin, models.CreateUpdateDictModel):
     """User's creation scheme"""
 
     email: str = Field(max_length=100)
     password: str = Field(max_length=100)
 
 
-class UserUpdate(models.CreateUpdateDictModel, __FullNameMixin):
+class UserUpdate(models.CreateUpdateDictModel, _FullNameMixin):
     """User's update scheme"""
 
     password: str | None = Field(default=None, max_length=100)
 
 
 class UserScheme(
-    __FullNameMixin,
-    __UsernameMixin,
+    _FullNameMixin,
+    _UsernameMixin,
     SQLModel,
 ):
     """User returning pydantic scheme"""
