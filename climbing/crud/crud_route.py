@@ -1,5 +1,6 @@
 from typing import Any, Type
 
+from fastapi_users_db_sqlalchemy import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -17,7 +18,7 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
     def __init__(self, model: Type[Route] = Route) -> None:
         super().__init__(model)
 
-    async def get(self, session: AsyncSession, row_id: int) -> Route | None:
+    async def get(self, session: AsyncSession, row_id: UUID4) -> Route | None:
         return (
             await session.execute(
                 select(Route)
@@ -79,7 +80,7 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
     ) -> Route:
         print(f"Old: {db_entity}\nNew: {new_entity}")
 
-    async def remove(self, session: AsyncSession, *, row_id: int) -> None:
+    async def remove(self, session: AsyncSession, *, row_id: UUID4) -> None:
         route_instance: Route | None = (
             await session.execute(
                 select(Route)

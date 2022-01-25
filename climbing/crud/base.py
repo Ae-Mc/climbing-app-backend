@@ -1,6 +1,7 @@
 from typing import Any, Generic, Type, TypeVar
 
 from fastapi.encoders import jsonable_encoder
+from fastapi_users_db_sqlalchemy import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -21,13 +22,13 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.model = model
 
     async def get(
-        self, session: AsyncSession, row_id: int
+        self, session: AsyncSession, row_id: UUID4
     ) -> ModelType | None:
         """Get single row by id
 
         Args:
             session (Session): database connection
-            row_id (int): row id
+            row_id (UUID4): row id
 
         Returns:
             ModelType | None: row with id == row_id. Could be None
@@ -96,13 +97,13 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return db_entity
 
     async def remove(
-        self, session: AsyncSession, *, row_id: int
+        self, session: AsyncSession, *, row_id: UUID4
     ) -> ModelType | None:
         """Removes single row from database
 
         Args:
             session (Session): database connection
-            row_id (int): row id
+            row_id (UUID4): row id
 
         Returns:
             None: if row with id == row_id not found

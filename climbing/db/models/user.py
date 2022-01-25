@@ -20,16 +20,16 @@ class OAuthAccount(SQLModelBaseOAuthAccount, table=True):
     """Table for storing OAuth accounts for each user"""
 
 
-class __UserWithFullName(SQLModel):
+class __FullNameMixin(SQLModel):
     first_name: str = Field(max_length=100)
     last_name: str = Field(max_length=100)
 
 
-class __UserWithUsername(SQLModel):
+class __UsernameMixin(SQLModel):
     username: str = Field(max_length=100)
 
 
-class User(SQLModelBaseUserDB, __UserWithFullName, table=True):
+class User(__FullNameMixin, SQLModelBaseUserDB, table=True):
     """User fetch pydantic model"""
 
     username: str = Field(
@@ -46,16 +46,19 @@ class UserCreate(
 ):
     """User's creation scheme"""
 
-    email: str
-    password: str
+    email: str = Field(max_length=100)
+    password: str = Field(max_length=100)
 
-class UserUpdate(models.BaseUserUpdate, __UserWithFullName):
-    """User's update pydantic scheme"""
+
+class UserUpdate(models.CreateUpdateDictModel, __FullNameMixin):
+    """User's update scheme"""
+
+    password: str | None = Field(default=None, max_length=100)
 
 
 class UserScheme(
-    __UserWithFullName,
-    __UserWithUsername,
+    __FullNameMixin,
+    __UsernameMixin,
     SQLModel,
 ):
     """User returning pydantic scheme"""
@@ -64,5 +67,6 @@ class UserScheme(
     email: str
     created_at: datetime | None
 
-class RouteUploader(__UserWithUsername, __UserWithFullName):
-    id: int
+
+class RouteUploader(__UsernameMixin, __FullNameMixin, SQLModel):
+    id: UUID4
