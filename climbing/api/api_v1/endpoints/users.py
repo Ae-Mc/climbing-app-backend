@@ -13,6 +13,7 @@ from climbing.core.security import (
 from climbing.core.user_manager import UserManager, get_user_manager
 from climbing.crud.crud_route import route as crud_route
 from climbing.db.models import Route, User, UserScheme
+from climbing.db.models.route import RouteReadWithImages
 from climbing.db.session import get_async_session
 
 router = APIRouter()
@@ -44,6 +45,7 @@ async def delete_me(
     user: User = Depends(current_user),
     user_manager: UserManager = Depends(get_user_manager),
 ):
+    """Удаление текущего пользователя"""
     user_routes: list[Route] = (
         (
             await async_session.execute(
@@ -56,6 +58,25 @@ async def delete_me(
     for route in user_routes:
         await crud_route.remove(async_session, row_id=route.id)
     await user_manager.delete(user)
+
+
+@router.get(
+    "/me/routes",
+    response_model=list[RouteReadWithImages],
+    name="users:my_routes",
+    responses=responses.LOGIN_REQUIRED,
+)
+async def read_user_routes(
+    async_session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_user),
+):
+    """Список трасс текущего пользователя"""
+    statement = (
+        select(Route)
+        .where(Route.uploader_id == user.id)
+        .options(selectinload(Route.images))
+    )
+    return (await async_session.execute(statement)).scalars().all()
 
 
 router.include_router(fastapi_users.get_users_router())

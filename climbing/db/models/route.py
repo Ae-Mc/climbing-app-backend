@@ -38,6 +38,8 @@ class RouteCreate(RouteBase):
     @validator("images", each_item=True)
     @classmethod
     def validate_image(cls, image: UploadFile):
+        """Проверяет, что каждое изображение имеет MIME-тип image"""
+
         if image.content_type.split("/")[0] != "image":
             raise ValueError("Must have MIME-type image/*")
         return image
@@ -68,7 +70,25 @@ class Route(RouteBase, table=True):
 
 
 class RouteRead(RouteBase):
+    """Базовая модель для чтения трассы"""
+
     id: UUID4 = Field(title="ID трассы")
-    uploader: UserScheme
-    images: List[RouteImage] = []
     created_at: datetime = Field(title="Дата добавления трассы на сервер")
+
+
+class RouteReadWithUploader(RouteRead):
+    """Модель для чтения трассы с полем uploader"""
+
+    uploader: UserScheme = Field(title="Пользователь, загрузивший трассу")
+
+
+class RouteReadWithImages(RouteRead):
+    """Модель для чтения трассы с полем images"""
+
+    images: List[RouteImage] = Field(
+        default=[], title="Список изображений трассы"
+    )
+
+
+class RouteReadWithAll(RouteReadWithUploader, RouteReadWithImages):
+    """Модель для чтения трассы со всеми дополнительными полями"""

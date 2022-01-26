@@ -9,19 +9,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from climbing.core import responses
 from climbing.core.security import current_active_user
 from climbing.crud import route as crud_route
-from climbing.db.models import Category, RouteCreate, RouteRead, User
+from climbing.db.models import Category, RouteCreate, RouteReadWithAll, User
 from climbing.db.session import get_async_session
 
 router = APIRouter()
 
 
-@router.get("", response_model=list[RouteRead], name="routes:all")
+@router.get("", response_model=list[RouteReadWithAll], name="routes:all")
 async def routes(session: AsyncSession = Depends(get_async_session)):
     "Получение списка всех трасс"
     return await crud_route.get_all(session)
 
 
-@router.get("/{route_id}", response_model=RouteRead, name="routes:route")
+@router.get(
+    "/{route_id}", response_model=RouteReadWithAll, name="routes:route"
+)
 async def route(
     route_id: UUID = Path(...),
     session: AsyncSession = Depends(get_async_session),
@@ -56,7 +58,7 @@ async def delete_route(
 
 @router.post(
     "",
-    response_model=RouteRead,
+    response_model=RouteReadWithAll,
     status_code=201,
     name="routes:new",
     responses=responses.LOGIN_REQUIRED,
