@@ -3,8 +3,7 @@ from typing import List
 from uuid import uuid4
 
 from fastapi import UploadFile
-from fastapi_users_db_sqlalchemy import UUID4
-from pydantic import validator
+from pydantic import UUID4, validator
 from sqlmodel import Field, Relationship, SQLModel
 
 from .category import Category

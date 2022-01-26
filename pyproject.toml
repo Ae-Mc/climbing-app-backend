@@ -10,7 +10,7 @@ aiosqlite = "^0.17.0"
 alembic = "^1.7.5"
 pydantic = "^1.9.0"
 fastapi = "^0.71.0"
-fastapi-users = {extras = ["sqlalchemy2", "oauth"], version = "^9.2.2"}
+fastapi-users = {extras = ["oauth"], version = "^9.2.2"}
 python = "^3.10"
 # Start of neovim dependencies
 pynvim = {version = "^0.4.3", optional = true}

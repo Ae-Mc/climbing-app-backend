@@ -1,7 +1,7 @@
 from typing import Any, Generic, Type, TypeVar
 
 from fastapi.encoders import jsonable_encoder
-from fastapi_users_db_sqlalchemy import UUID4
+from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload

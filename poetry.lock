@@ -223,7 +223,6 @@ python-versions = ">=3.7"
 [package.dependencies]
 email-validator = ">=1.1.0,<1.2"
 fastapi = ">=0.65.2,<0.72.0"
-fastapi-users-db-sqlalchemy = {version = ">=2.0.0", optional = true, markers = "extra == \"sqlalchemy2\""}
 httpx-oauth = {version = ">=0.4,<0.5", optional = true, markers = "extra == \"oauth\""}
 makefun = ">=1.11.2,<1.14"
 passlib = {version = "1.7.4", extras = ["bcrypt"]}
@@ -238,18 +237,6 @@ redis = ["aioredis (>=2.0.1,<2.1.0)", "hiredis (>=2.0.0,<2.1.0)"]
 sqlalchemy = ["fastapi-users-db-sqlalchemy (>=1.1.0,<2.0.0)"]
 sqlalchemy2 = ["fastapi-users-db-sqlalchemy (>=2.0.0)"]
 tortoise-orm = ["fastapi-users-db-tortoise (>=1.1.0)"]
-
-[[package]]
-name = "fastapi-users-db-sqlalchemy"
-version = "2.0.4"
-description = "FastAPI Users database adapter for SQLAlchemy."
-category = "main"
-optional = false
-python-versions = ">=3.7"
-
-[package.dependencies]
-fastapi-users = ">=9.1.0"
-sqlalchemy = ">=1.4"
 
 [[package]]
 name = "fastapi-users-db-sqlmodel"
@@ -802,11 +789,11 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "uvicorn"
-version = "0.17.0"
+version = "0.17.0.post1"
 description = "The lightning-fast ASGI server."
 category = "dev"
 optional = false
-python-versions = "*"
+python-versions = ">=3.7"
 
 [package.dependencies]
 asgiref = ">=3.4.0"
@@ -838,7 +825,7 @@ neovim = ["pynvim", "pyright"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "b25f124317673764115354524f89def5d4ebf18d158bc775d41bacd0e131f632"
+content-hash = "0f3e1c6d2edeea3a786aaf51d030b808e1cbee3dd1249fe2b7622df1c38ea8e1"
 
 [metadata.files]
 aiosqlite = [
@@ -964,10 +951,6 @@ fastapi = [
 fastapi-users = [
     {file = "fastapi-users-9.2.2.tar.gz", hash = "sha256:59febb9302dd0590b6992343896437bd1941ec4c6726bf5abf9093d681a98f23"},
     {file = "fastapi_users-9.2.2-py3-none-any.whl", hash = "sha256:b565d481ea2182f09eff0933f3263022f6d8595e4eaab70c1218a8028ed1bb41"},
-]
-fastapi-users-db-sqlalchemy = [
-    {file = "fastapi-users-db-sqlalchemy-2.0.4.tar.gz", hash = "sha256:93bd5ba48f7a7e9fe43b62a48ad7c5ec5993c8230c6dafb61c341ceee811ebf1"},
-    {file = "fastapi_users_db_sqlalchemy-2.0.4-py3-none-any.whl", hash = "sha256:4d246157c18335353111bfdf47dca081a6663a337e2f7e9670eb9606730399bb"},
 ]
 fastapi-users-db-sqlmodel = [
     {file = "fastapi-users-db-sqlmodel-0.1.1.tar.gz", hash = "sha256:9d87edd30d92a8387d8c2f3ced5fb4d240fc5ed9afc57fc2822292e4027f3746"},
@@ -1421,8 +1404,8 @@ typing-extensions = [
     {file = "typing_extensions-4.0.1.tar.gz", hash = "sha256:4ca091dea149f945ec56afb48dae714f21e8692ef22a395223bcd328961b6a0e"},
 ]
 uvicorn = [
-    {file = "uvicorn-0.17.0-py3-none-any.whl", hash = "sha256:0b89c91bb8fe84c4bded9996af13c4b8c0de799d29bffeaa0c8ad298f2be0934"},
-    {file = "uvicorn-0.17.0.tar.gz", hash = "sha256:192c2422b056a3beb512c6c260bf77a7a884204a4ae41856719c1913ead63bbb"},
+    {file = "uvicorn-0.17.0.post1-py3-none-any.whl", hash = "sha256:fa166e6c3d58e23ff5a1a3543b079c7b28aa057ab1388201e4b34a49ec05da72"},
+    {file = "uvicorn-0.17.0.post1.tar.gz", hash = "sha256:60a149248181920a73b2e97aec1dacec5501618867f041a228b2519d91a62a91"},
 ]
 wcwidth = [
     {file = "wcwidth-0.2.5-py2.py3-none-any.whl", hash = "sha256:beb4802a9cebb9144e99086eff703a642a13d6a0052920003a230f3294bbe784"},

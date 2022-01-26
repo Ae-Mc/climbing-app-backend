@@ -2,13 +2,13 @@ from datetime import datetime, timezone
 from typing import List
 
 from fastapi_users import models
-from fastapi_users_db_sqlalchemy import UUID4
 from fastapi_users_db_sqlmodel import (
     Field,
     SQLModelBaseOAuthAccount,
     SQLModelBaseUserDB,
 )
 from fastapi_users_db_sqlmodel.access_token import SQLModelBaseAccessToken
+from pydantic import UUID4
 from sqlmodel import Relationship, SQLModel
 
 

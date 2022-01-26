@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
-from fastapi_users_db_sqlalchemy import UUID4
+from pydantic import UUID4
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
