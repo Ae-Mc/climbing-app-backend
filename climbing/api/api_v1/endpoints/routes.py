@@ -9,8 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from climbing.core import responses
 from climbing.core.security import current_active_user
 from climbing.crud import route as crud_route
-from climbing.db.models import Category, RouteCreate, RouteReadWithAll, User
+from climbing.db.models import Category, RouteCreate, User
 from climbing.db.session import get_async_session
+from climbing.schemas import RouteReadWithAll
 
 router = APIRouter()
 

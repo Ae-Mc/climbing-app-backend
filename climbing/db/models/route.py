@@ -8,7 +8,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from .category import Category
 from .route_image import RouteImage
-from .user import User, UserScheme
+from .user import User
 
 
 class RouteBase(SQLModel):
@@ -67,28 +67,3 @@ class Route(RouteBase, table=True):
         default_factory=lambda: datetime.now(timezone.utc),
         title="Дата добавления трассы на сервер",
     )
-
-
-class RouteRead(RouteBase):
-    """Базовая модель для чтения трассы"""
-
-    id: UUID4 = Field(title="ID трассы")
-    created_at: datetime = Field(title="Дата добавления трассы на сервер")
-
-
-class RouteReadWithUploader(RouteRead):
-    """Модель для чтения трассы с полем uploader"""
-
-    uploader: UserScheme = Field(title="Пользователь, загрузивший трассу")
-
-
-class RouteReadWithImages(RouteRead):
-    """Модель для чтения трассы с полем images"""
-
-    images: List[RouteImage] = Field(
-        default=[], title="Список изображений трассы"
-    )
-
-
-class RouteReadWithAll(RouteReadWithUploader, RouteReadWithImages):
-    """Модель для чтения трассы со всеми дополнительными полями"""

@@ -12,16 +12,16 @@ from climbing.core.security import (
 )
 from climbing.core.user_manager import UserManager, get_user_manager
 from climbing.crud.crud_route import route as crud_route
-from climbing.db.models import Route, User, UserScheme
-from climbing.db.models.route import RouteReadWithImages
+from climbing.db.models import Route, User
 from climbing.db.session import get_async_session
+from climbing.schemas import RouteReadWithImages, UserRead
 
 router = APIRouter()
 
 
 @router.get(
     "",
-    response_model=list[UserScheme],
+    response_model=list[UserRead],
     name="users:all_users",
     dependencies=[Depends(current_superuser)],
     responses={**responses.SUPERUSER_REQUIRED, **responses.LOGIN_REQUIRED},
@@ -30,8 +30,7 @@ async def read_users(
     async_session: AsyncSession = Depends(get_async_session),
 ):
     """Список пользователей"""
-    statement = select(User).options(selectinload(User.oauth_accounts))
-    return (await async_session.execute(statement)).scalars().all()
+    return (await async_session.execute(select(User))).scalars().all()
 
 
 @router.delete(

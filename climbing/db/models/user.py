@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import List
+from typing import TYPE_CHECKING, List
 
 from fastapi_users import models
 from fastapi_users_db_sqlmodel import (
@@ -8,8 +8,10 @@ from fastapi_users_db_sqlmodel import (
     SQLModelBaseUserDB,
 )
 from fastapi_users_db_sqlmodel.access_token import SQLModelBaseAccessToken
-from pydantic import UUID4
 from sqlmodel import Relationship, SQLModel
+
+if TYPE_CHECKING:
+    from climbing.db.models.route import Route
 
 
 class AccessToken(SQLModelBaseAccessToken, table=True):
@@ -20,28 +22,26 @@ class OAuthAccount(SQLModelBaseOAuthAccount, table=True):
     """Table for storing OAuth accounts for each user"""
 
 
-class _FullNameMixin(SQLModel):
-    first_name: str = Field(max_length=100)
-    last_name: str = Field(max_length=100)
-
-
-class _UsernameMixin(SQLModel):
-    username: str = Field(max_length=100)
-
-
-class User(_FullNameMixin, SQLModelBaseUserDB, table=True):
-    """User model"""
-
+class UserBase(SQLModel):
     username: str = Field(
         max_length=100, sa_column_kwargs={"unique": True, "index": True}
     )
+    first_name: str = Field(max_length=100)
+    last_name: str = Field(max_length=100)
+
     created_at: datetime | None = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
+
+
+class User(UserBase, SQLModelBaseUserDB, table=True):
+    """User model"""
+
     oauth_accounts: List[OAuthAccount] = Relationship()
+    routes: List["Route"] = Relationship(back_populates="uploader")
 
 
-class UserCreate(_FullNameMixin, _UsernameMixin, models.CreateUpdateDictModel):
+class UserCreate(UserBase, models.CreateUpdateDictModel):
     """User's creation scheme"""
 
     email: str = Field(max_length=100)
@@ -55,15 +55,3 @@ class UserUpdate(models.CreateUpdateDictModel):
     first_name: str | None = Field(default=None, max_length=100)
     last_name: str | None = Field(default=None, max_length=100)
     oauth_accounts: List[OAuthAccount] | None = None
-
-
-class UserScheme(
-    _FullNameMixin,
-    _UsernameMixin,
-    SQLModel,
-):
-    """User returning pydantic scheme"""
-
-    id: UUID4 | None
-    email: str
-    created_at: datetime | None
