@@ -145,3 +145,6 @@ private.*
 
 # site media files
 /media
+
+# Editors' files
+.vscode/*
