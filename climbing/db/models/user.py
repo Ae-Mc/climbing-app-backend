@@ -23,6 +23,8 @@ class OAuthAccount(SQLModelBaseOAuthAccount, table=True):
 
 
 class UserBase(SQLModel):
+    """Basic user model, that will be inherited by other models"""
+
     username: str = Field(
         max_length=100, sa_column_kwargs={"unique": True, "index": True}
     )
@@ -38,7 +40,7 @@ class User(UserBase, SQLModelBaseUserDB, table=True):
     """User model"""
 
     oauth_accounts: List[OAuthAccount] = Relationship()
-    routes: List["Route"] = Relationship(back_populates="uploader")
+    routes: List["Route"] = Relationship(back_populates="author")
 
 
 class UserCreate(UserBase, models.CreateUpdateDictModel):

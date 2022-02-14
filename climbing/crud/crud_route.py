@@ -23,7 +23,7 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
             await session.execute(
                 select(Route)
                 .options(selectinload("images"))
-                .options(selectinload("uploader"))
+                .options(selectinload("author"))
                 .where(Route.id == row_id)
             )
         ).scalar_one_or_none()
@@ -34,7 +34,7 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
                 await session.execute(
                     select(self.model)
                     .options(selectinload("images"))
-                    .options(selectinload("uploader"))
+                    .options(selectinload("author"))
                 )
             )
             .scalars()
@@ -46,7 +46,7 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
     ) -> Route:
         storage = FileStorage(settings.MEDIA_ROOT)
         images: list[RouteImage] = []
-        entity_data = entity.dict(exclude={"images": True, "uploader": True})
+        entity_data = entity.dict(exclude={"images": True, "author": True})
         route_instance = self.model(
             **entity_data,
             uploader_id=entity.uploader.id,

@@ -1,8 +1,8 @@
 from .route import (
     RouteRead,
     RouteReadWithAll,
+    RouteReadWithAuthor,
     RouteReadWithImages,
-    RouteReadWithUploader,
 )
 from .user import UserRead, UserReadWithRoutes
 
@@ -10,7 +10,7 @@ __all__ = [
     "RouteRead",
     "RouteReadWithAll",
     "RouteReadWithImages",
-    "RouteReadWithUploader",
+    "RouteReadWithAuthor",
     "UserRead",
     "UserReadWithRoutes",
 ]

@@ -7,10 +7,10 @@ from climbing.db.models import RouteImage
 from .user_and_route_base_read_classes import RouteRead, UserRead
 
 
-class RouteReadWithUploader(RouteRead):
+class RouteReadWithAuthor(RouteRead):
     """Модель для чтения трассы с полем uploader"""
 
-    uploader: UserRead = Field(title="Пользователь, загрузивший трассу")
+    author: UserRead = Field(title="Автор трассы")
 
 
 class RouteReadWithImages(RouteRead):
@@ -21,5 +21,5 @@ class RouteReadWithImages(RouteRead):
     )
 
 
-class RouteReadWithAll(RouteReadWithUploader, RouteReadWithImages):
+class RouteReadWithAll(RouteReadWithAuthor, RouteReadWithImages):
     """Модель для чтения трассы со всеми дополнительными полями"""

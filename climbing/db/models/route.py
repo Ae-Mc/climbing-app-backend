@@ -21,9 +21,6 @@ class RouteBase(SQLModel):
     mark_color: str = Field(
         ..., min_length=4, max_length=100, title="Цвет меток трассы"
     )
-    author: str | None = Field(
-        None, min_length=0, max_length=150, title="Автор трассы"
-    )
     description: str = Field(..., title="Описание трассы")
     creation_date: date = Field(..., title="Дата создания (постановки) трассы")
 
@@ -33,7 +30,7 @@ class RouteCreate(RouteBase):
     использована напрямую как параметр запроса)."""
 
     images: list[UploadFile] = Field(...)
-    uploader: User = Field(..., title="Пользователь, загрузивший трассу")
+    author: User = Field(..., title="Автор трассы")
 
     @validator("images", each_item=True)
     @classmethod
@@ -58,12 +55,13 @@ class Route(RouteBase, table=True):
     id: UUID4 = Field(
         title="ID трассы", primary_key=True, default_factory=uuid4
     )
-    uploader_id: UUID4 = Field(
-        ..., title="ID пользователя, загрузивший трассу", foreign_key="user.id"
+    author_id: UUID4 = Field(
+        ..., title="ID автора трассы", foreign_key="user.id"
     )
-    uploader: User = Relationship()
+    author: User = Relationship()
     images: List[RouteImage] = Relationship(back_populates="route")
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
+        nullable=False,
         title="Дата добавления трассы на сервер",
     )
