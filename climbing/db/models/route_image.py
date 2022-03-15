@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
+from fastapi import Request
 from pydantic import UUID4
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -10,7 +11,21 @@ if TYPE_CHECKING:
 
 
 class BaseRouteImage(SQLModel):
+    """Базовая модель для хранения изображения"""
+
     url: str
+
+    def set_absolute_url(self, request: Request):
+        """Устанавливает абсолютный, а не относительный URL-адрес для
+        изображения"""
+        url_obj = request.url
+        if url_obj.scheme == "https" and url_obj.port == 443:
+            port = ""
+        elif url_obj.scheme == "http" and url_obj.port == 80:
+            port = ""
+        else:
+            port = f":{url_obj.port}"
+        self.url = f"{url_obj.scheme}://{url_obj.hostname}{port}/{self.url}"
 
 
 class RouteImage(BaseRouteImage, table=True):

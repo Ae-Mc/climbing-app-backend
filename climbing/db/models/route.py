@@ -2,7 +2,7 @@ from datetime import date, datetime, timezone
 from typing import List
 from uuid import uuid4
 
-from fastapi import UploadFile
+from fastapi import Request, UploadFile
 from pydantic import UUID4, validator
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -65,3 +65,10 @@ class Route(RouteBase, table=True):
         nullable=False,
         title="Дата добавления трассы на сервер",
     )
+
+    def set_absolute_image_urls(self, request: Request) -> None:
+        """Устанавливает абсолютные, а не относительные URL-адреса для
+        изображений"""
+
+        for image in self.images:  # pylint: disable=not-an-iterable
+            image.set_absolute_url(request)

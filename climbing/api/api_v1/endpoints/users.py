@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Request, status
 from fastapi.param_functions import Depends
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from sqlalchemy.future import select
@@ -48,7 +48,7 @@ async def delete_me(
     user_routes: list[Route] = (
         (
             await async_session.execute(
-                select(Route).where(Route.uploader_id == user.id)
+                select(Route).where(Route.author_id == user.id)
             )
         )
         .scalars()
@@ -66,16 +66,22 @@ async def delete_me(
     responses=responses.LOGIN_REQUIRED,
 )
 async def read_user_routes(
+    request: Request,
     async_session: AsyncSession = Depends(get_async_session),
     user: User = Depends(current_user),
 ):
     """Список трасс текущего пользователя"""
     statement = (
         select(Route)
-        .where(Route.uploader_id == user.id)
+        .where(Route.author_id == user.id)
         .options(selectinload(Route.images))
     )
-    return (await async_session.execute(statement)).scalars().all()
+    _routes: list[Route] = (
+        (await async_session.execute(statement)).scalars().all()
+    )
+    for _route in _routes:
+        _route.set_absolute_image_urls(request)
+    return _routes
 
 
 router.include_router(fastapi_users.get_users_router())

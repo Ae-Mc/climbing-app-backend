@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, List
 
+from fastapi import Request
 from fastapi_users import models
 from fastapi_users_db_sqlmodel import (
     Field,
@@ -41,6 +42,13 @@ class User(UserBase, SQLModelBaseUserDB, table=True):
 
     oauth_accounts: List[OAuthAccount] = Relationship()
     routes: List["Route"] = Relationship(back_populates="author")
+
+    def set_absolute_image_urls(self, request: Request) -> None:
+        """Устанавливает абсолютные, а не относительные URL-адреса для
+        изображений трасс"""
+
+        for route in self.routes:  # pylint: disable=not-an-iterable
+            route.set_absolute_image_urls(request)
 
 
 class UserCreate(UserBase, models.CreateUpdateDictModel):
