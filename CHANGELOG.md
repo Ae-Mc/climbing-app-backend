@@ -1,3 +1,14 @@
+## 1.0.0 (2022-03-16)
+
+### Fix
+
+- **BaseRouteImage**: fix port in image urls
+- **routes**: remove excess author column and rename uploader column to author
+
+### Feat
+
+- set RouteImages' urls to absolute, fix bug that occured after renaming uploader_id to author_id
+
 ## 0.2.0 (2022-01-26)
 
 ### Fix

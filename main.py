@@ -10,7 +10,7 @@ if __name__ == "__main__":
         run(
             "climbing.main:app",
             host="0.0.0.0",
-            port=8000,
+            port=80,
             reload=True,
             use_colors=USE_COLORS,
         )
@@ -18,6 +18,6 @@ if __name__ == "__main__":
         run(
             app,  # type: ignore
             host="0.0.0.0",
-            port=8000,
+            port=80,
             use_colors=USE_COLORS,
         )
