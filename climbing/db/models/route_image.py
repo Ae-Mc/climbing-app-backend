@@ -19,9 +19,7 @@ class BaseRouteImage(SQLModel):
         """Устанавливает абсолютный, а не относительный URL-адрес для
         изображения"""
         url_obj = request.url
-        if url_obj.scheme == "https" and url_obj.port == 443:
-            port = ""
-        elif url_obj.scheme == "http" and url_obj.port == 80:
+        if url_obj.port is None:
             port = ""
         else:
             port = f":{url_obj.port}"
