@@ -32,12 +32,16 @@ class UserBase(SQLModel):
     first_name: str = Field(max_length=100)
     last_name: str = Field(max_length=100)
 
+
+class UserBaseWithCreatedAt(UserBase):
+    """Basic user model with generated created_at field"""
+
     created_at: datetime | None = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
 
 
-class User(UserBase, SQLModelBaseUserDB, table=True):
+class User(UserBaseWithCreatedAt, SQLModelBaseUserDB, table=True):
     """User model"""
 
     oauth_accounts: List[OAuthAccount] = Relationship()

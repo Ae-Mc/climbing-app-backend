@@ -3,7 +3,14 @@
 from .category import Category
 from .route import Route, RouteBase, RouteCreate, RouteUpdate
 from .route_image import RouteImage
-from .user import AccessToken, User, UserBase, UserCreate, UserUpdate
+from .user import (
+    AccessToken,
+    User,
+    UserBase,
+    UserBaseWithCreatedAt,
+    UserCreate,
+    UserUpdate,
+)
 
 __all__ = [
     "AccessToken",
@@ -15,6 +22,7 @@ __all__ = [
     "RouteUpdate",
     "User",
     "UserBase",
+    "UserBaseWithCreatedAt",
     "UserCreate",
     "UserUpdate",
 ]

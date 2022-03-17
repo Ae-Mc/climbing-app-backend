@@ -3,15 +3,14 @@ from datetime import datetime
 from fastapi_users_db_sqlmodel import Field
 from pydantic import UUID4
 
-from climbing.db.models import RouteBase, UserBase
+from climbing.db.models import RouteBase, UserBaseWithCreatedAt
 
 
-class UserRead(UserBase):
+class UserRead(UserBaseWithCreatedAt):
     """User returning pydantic scheme"""
 
     id: UUID4
     email: str
-    created_at: datetime
 
 
 class RouteRead(RouteBase):
