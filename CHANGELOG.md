@@ -1,3 +1,10 @@
+## 1.0.1 (2022-03-17)
+
+### Fix
+
+- **db/models**: remove created_at field from UserCreate model
+- **util/alembic**: remove drop table statement from add_created_at_column_to_route_table patch that crashed upgrade process
+
 ## 1.0.0 (2022-03-16)
 
 ### Fix
