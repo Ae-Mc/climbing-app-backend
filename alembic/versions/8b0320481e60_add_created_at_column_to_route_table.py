@@ -33,7 +33,6 @@ def upgrade():
                 nullable=False,
             )
         )
-    op.drop_table("_alembic_tmp_route")
     with op.batch_alter_table("route", schema=None) as batch_op:
         batch_op.alter_column("created_at", server_default=None)
 
