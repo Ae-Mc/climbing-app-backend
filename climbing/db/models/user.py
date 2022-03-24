@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, List
 from fastapi import Request
 from fastapi_users import models
 from fastapi_users_db_sqlmodel import (
+    EmailStr,
     Field,
     SQLModelBaseOAuthAccount,
     SQLModelBaseUserDB,
@@ -23,22 +24,49 @@ class OAuthAccount(SQLModelBaseOAuthAccount, table=True):
     """Table for storing OAuth accounts for each user"""
 
 
-class UserBase(SQLModel):
-    """Basic user model, that will be inherited by other models"""
-
-    username: str = Field(
-        max_length=100, sa_column_kwargs={"unique": True, "index": True}
-    )
-    first_name: str = Field(max_length=100)
-    last_name: str = Field(max_length=100)
-
-
-class UserBaseWithCreatedAt(UserBase):
-    """Basic user model with generated created_at field"""
+class CreatedAt(SQLModel):
+    """Model with only created_at field"""
 
     created_at: datetime | None = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
+
+
+class Email(SQLModel):
+    """Model with only email field"""
+
+    email: EmailStr = Field()
+
+
+class FirstAndLastNames(SQLModel):
+    """Model with only first_name and last_name fields"""
+
+    first_name: str = Field(min_length=1, max_length=100)
+    last_name: str = Field(min_length=1, max_length=100)
+
+
+class Password(SQLModel):
+    """Model with only password field"""
+
+    password: str = Field(default=None, max_length=100)
+
+
+class Username(SQLModel):
+    """Model with only username field"""
+
+    username: str = Field(
+        min_length=2,
+        max_length=100,
+        sa_column_kwargs={"unique": True, "index": True},
+    )
+
+
+class UserBase(FirstAndLastNames, Username):
+    """Basic user model, that will be inherited by other models"""
+
+
+class UserBaseWithCreatedAt(UserBase, CreatedAt):
+    """Basic user model with generated created_at field"""
 
 
 class User(UserBaseWithCreatedAt, SQLModelBaseUserDB, table=True):
@@ -55,17 +83,11 @@ class User(UserBaseWithCreatedAt, SQLModelBaseUserDB, table=True):
             route.set_absolute_image_urls(request)
 
 
-class UserCreate(UserBase, models.CreateUpdateDictModel):
+class UserCreate(UserBase, Email, Password, models.CreateUpdateDictModel):
     """User's creation scheme"""
 
-    email: str = Field(max_length=100)
-    password: str = Field(max_length=100)
 
-
-class UserUpdate(models.CreateUpdateDictModel):
+class UserUpdate(FirstAndLastNames, Password, models.CreateUpdateDictModel):
     """User's update scheme"""
 
-    password: str | None = Field(default=None, max_length=100)
-    first_name: str | None = Field(default=None, max_length=100)
-    last_name: str | None = Field(default=None, max_length=100)
     oauth_accounts: List[OAuthAccount] | None = None
