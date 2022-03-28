@@ -5,11 +5,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
 from climbing.core import responses
-from climbing.core.security import (
-    current_superuser,
-    current_user,
-    fastapi_users,
-)
+from climbing.core.security import current_user, fastapi_users
 from climbing.core.user_manager import UserManager, get_user_manager
 from climbing.crud.crud_route import route as crud_route
 from climbing.db.models import Route, User
@@ -23,8 +19,8 @@ router = APIRouter()
     "",
     response_model=list[UserRead],
     name="users:all_users",
-    dependencies=[Depends(current_superuser)],
-    responses={**responses.SUPERUSER_REQUIRED, **responses.LOGIN_REQUIRED},
+    dependencies=[Depends(current_user)],
+    responses={**responses.LOGIN_REQUIRED},
 )
 async def read_users(
     async_session: AsyncSession = Depends(get_async_session),
