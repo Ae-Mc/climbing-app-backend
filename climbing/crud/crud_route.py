@@ -47,10 +47,7 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
         storage = FileStorage(settings.MEDIA_ROOT)
         images: list[RouteImage] = []
         entity_data = entity.dict(exclude={"images": True, "author": True})
-        route_instance = self.model(
-            **entity_data,
-            uploader_id=entity.uploader.id,
-        )
+        route_instance = self.model(**entity_data, author_id=entity.author.id)
         session.add(route_instance)
         await session.commit()
         await session.refresh(route_instance, attribute_names={"id"})

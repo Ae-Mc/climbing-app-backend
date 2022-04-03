@@ -87,8 +87,7 @@ async def create_route(
     name: str = Form(..., min_length=1, max_length=150),
     category: Category = Form(...),
     mark_color: str = Form(..., min_length=4, max_length=100),
-    author: str = Form(None, max_length=150),
-    description: str = Form(...),
+    description: str = Form("", min_length=0, max_length=10000),
     creation_date: date = Form(...),
     images: list[UploadFile] = File([], media_type="image/*"),
     user: User = Depends(current_active_user),
@@ -100,11 +99,10 @@ async def create_route(
             name=name,
             category=category,
             mark_color=mark_color,
-            author=author,
+            author=user,
             description=description,
             creation_date=creation_date,
             images=images,
-            uploader=user,
         )
         created_route = await crud_route.create(session, route_instance)
         created_route.set_absolute_image_urls(request)
