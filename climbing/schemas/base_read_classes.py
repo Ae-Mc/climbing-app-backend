@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi_users_db_sqlmodel import Field
 from pydantic import UUID4
 
-from climbing.db.models import RouteBase, UserBaseWithCreatedAt
+from climbing.db.models import AscentBase, RouteBase, UserBaseWithCreatedAt
 
 
 class UserRead(UserBaseWithCreatedAt):
@@ -18,3 +18,9 @@ class RouteRead(RouteBase):
 
     id: UUID4 = Field(title="ID трассы")
     created_at: datetime = Field(title="Дата добавления трассы на сервер")
+
+
+class AscentRead(AscentBase):
+    """Базовая модель для чтения прохождения трассы"""
+
+    id: UUID4

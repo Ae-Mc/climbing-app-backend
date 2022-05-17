@@ -4,7 +4,7 @@ from fastapi_users_db_sqlmodel import Field
 
 from climbing.db.models import RouteImage
 
-from .user_and_route_base_read_classes import RouteRead, UserRead
+from .base_read_classes import RouteRead, UserRead
 
 
 class RouteReadWithAuthor(RouteRead):

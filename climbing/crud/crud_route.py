@@ -72,6 +72,7 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
         new_entity: RouteUpdate | dict[str, Any],
     ) -> Route:
         print(f"Old: {db_entity}\nNew: {new_entity}")
+        raise Exception("Not impleneted")
 
     async def remove(self, session: AsyncSession, *, row_id: UUID4) -> None:
         route_instance: Route | None = (
