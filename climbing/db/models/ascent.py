@@ -2,9 +2,10 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
+from fastapi import Request
 from fastapi_users_db_sqlmodel import Field
 from pydantic import UUID4
-from sqlalchemy import Column, ForeignKey, String
+from sqlalchemy import Column, ForeignKey
 from sqlmodel import Relationship, SQLModel
 
 from .route import Route
@@ -14,8 +15,10 @@ if TYPE_CHECKING:
 
 
 class AscentBase(SQLModel):
-    is_flash: bool = Field()
-    date: datetime = Field()
+    """Базовая модель подъёма"""
+
+    is_flash: bool = Field(..., title="Пройдена ли трасса с первой попытки")
+    date: datetime = Field(..., title="Дата подъёма")
 
 
 class AscentCreate(AscentBase):
@@ -47,3 +50,10 @@ class Ascent(AscentBase, table=True):
         ),
     )
     user: "User" = Relationship(back_populates="ascents")
+
+    def set_absolute_image_urls(self, request: Request) -> None:
+        """Устанавливает абсолютные, а не относительные URL-адреса для
+        изображений"""
+        if self.route is not None:
+            # pylint: disable=no-member
+            self.route.set_absolute_image_urls(request)

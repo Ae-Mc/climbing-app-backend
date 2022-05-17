@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Path
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Request
 from fastapi_users_db_sqlmodel import AsyncSession
 from pydantic import UUID4
 
@@ -17,9 +17,15 @@ router = APIRouter()
 
 
 @router.get("", response_model=list[AscentReadWithAll], name="ascents:all")
-async def ascents(session: AsyncSession = Depends(get_async_session)):
+async def ascents(
+    request: Request,
+    session: AsyncSession = Depends(get_async_session),
+):
     """Получение списка всех подъёмов"""
-    return await crud_ascent.get_all(session)
+    _ascents = await crud_ascent.get_all(session)
+    for _ascent in _ascents:
+        _ascent.set_absolute_image_urls(request)
+    return _ascents
 
 
 @router.post(
@@ -29,6 +35,7 @@ async def ascents(session: AsyncSession = Depends(get_async_session)):
     responses={**ID_NOT_FOUND, **LOGIN_REQUIRED},
 )
 async def ascent_create(
+    request: Request,
     date: datetime = Body(...),
     is_flash: bool = Body(...),
     route_id: UUID4 = Body(...),
@@ -48,6 +55,7 @@ async def ascent_create(
             user_id=user.id,
         ),
     )
+    _ascent.set_absolute_image_urls(request)
     return _ascent
 
 
@@ -58,6 +66,7 @@ async def ascent_create(
     responses=ID_NOT_FOUND,
 )
 async def ascent(
+    request: Request,
     session: AsyncSession = Depends(get_async_session),
     ascent_id: UUID4 = Path(...),
 ):
@@ -65,6 +74,7 @@ async def ascent(
     _ascent = await crud_ascent.get(session, ascent_id)
     if _ascent is None:
         raise HTTPException(404)
+    _ascent.set_absolute_image_urls(request)
     return _ascent
 
 
@@ -75,6 +85,7 @@ async def ascent(
     responses={**ID_NOT_FOUND, **LOGIN_REQUIRED},
 )
 async def ascent_remove(
+    request: Request,
     session: AsyncSession = Depends(get_async_session),
     ascent_id: UUID4 = Path(...),
     user: User = Depends(current_active_user),
@@ -88,4 +99,5 @@ async def ascent_remove(
     _ascent = await crud_ascent.remove(session, row_id=ascent_id)
     if _ascent is None:
         raise HTTPException(404)
+    _ascent.set_absolute_image_urls(request)
     return _ascent
