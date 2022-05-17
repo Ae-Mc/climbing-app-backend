@@ -13,6 +13,7 @@ from fastapi_users_db_sqlmodel.access_token import SQLModelBaseAccessToken
 from sqlmodel import Relationship, SQLModel
 
 if TYPE_CHECKING:
+    from climbing.db.models.ascent import Ascent
     from climbing.db.models.route import Route
 
 
@@ -72,6 +73,11 @@ class UserBaseWithCreatedAt(UserBase, CreatedAt):
 class User(UserBaseWithCreatedAt, SQLModelBaseUserDB, table=True):
     """User model"""
 
+    ascents: List["Ascent"] = Relationship(
+        back_populates="user",
+        # Instruct the ORM how to track changes to local objects
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
     oauth_accounts: List[OAuthAccount] = Relationship()
     routes: List["Route"] = Relationship(back_populates="author")
 

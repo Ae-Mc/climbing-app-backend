@@ -22,7 +22,9 @@ async_session_maker = sessionmaker(
 
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
+    session: AsyncSession
     async with async_session_maker() as session:
+        await session.execute("PRAGMA foreign_keys=ON")
         yield session
 
 

@@ -1,5 +1,6 @@
 """Module for storing pydantic schemas"""
 
+from .ascent import Ascent, AscentBase, AscentCreate, AscentUpdate
 from .category import Category
 from .route import Route, RouteBase, RouteCreate, RouteUpdate
 from .route_image import RouteImage
@@ -14,6 +15,10 @@ from .user import (
 
 __all__ = [
     "AccessToken",
+    "Ascent",
+    "AscentBase",
+    "AscentCreate",
+    "AscentUpdate",
     "Category",
     "Route",
     "RouteBase",
