@@ -38,7 +38,10 @@ async def routes(
 
 
 @router.get(
-    "/{route_id}", response_model=RouteReadWithAll, name="routes:route"
+    "/{route_id}",
+    response_model=RouteReadWithAll,
+    name="routes:route",
+    responses=responses.ID_NOT_FOUND,
 )
 async def route(
     request: Request,
@@ -47,15 +50,16 @@ async def route(
 ):
     "Получение трассы"
     route_instance = await crud_route.get(session, route_id)
-    if route_instance:
-        route_instance.set_absolute_image_urls(request)
+    if route_instance is None:
+        raise HTTPException(404)
+    route_instance.set_absolute_image_urls(request)
     return route_instance
 
 
 @router.delete(
     "/{route_id}",
     name="routes:delete_route",
-    responses=responses.LOGIN_REQUIRED,
+    responses={**responses.LOGIN_REQUIRED, **responses.ID_NOT_FOUND},
     status_code=204,
 )
 async def delete_route(

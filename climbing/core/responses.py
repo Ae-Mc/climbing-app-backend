@@ -6,3 +6,4 @@ SUPERUSER_REQUIRED: dict[int | str, dict[str, Any]] = {
 LOGIN_REQUIRED: dict[int | str, dict[str, Any]] = {
     401: {"description": "Missing token or inactive user"}
 }
+ID_NOT_FOUND = {404: {"description": "Item with ID not found"}}
