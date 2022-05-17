@@ -7,10 +7,12 @@ from sqlalchemy.orm import selectinload
 from climbing.core import responses
 from climbing.core.security import current_user, fastapi_users
 from climbing.core.user_manager import UserManager, get_user_manager
+from climbing.crud import ascent as crud_ascent
 from climbing.crud.crud_route import route as crud_route
 from climbing.db.models import Route, User
 from climbing.db.session import get_async_session
 from climbing.schemas import RouteReadWithImages, UserRead
+from climbing.schemas.ascent import AscentReadWithAll
 
 router = APIRouter()
 
@@ -78,6 +80,24 @@ async def read_user_routes(
     for _route in _routes:
         _route.set_absolute_image_urls(request)
     return _routes
+
+
+@router.get(
+    "/me/ascents",
+    response_model=list[AscentReadWithAll],
+    name="users:my_ascents",
+    responses=responses.LOGIN_REQUIRED,
+)
+async def read_user_ascents(
+    request: Request,
+    async_session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_user),
+):
+    """Список подъёмов текущего пользователя"""
+    ascents = await crud_ascent.get_for_user(async_session, user.id)
+    for ascent in ascents:
+        ascent.set_absolute_image_urls(request)
+    return ascents
 
 
 router.include_router(fastapi_users.get_users_router())

@@ -43,6 +43,25 @@ class CRUDAscent(CRUDBase[Ascent, AscentCreate, AscentUpdate]):
             .all()
         )
 
+    async def get_for_user(
+        self, session: AsyncSession, user_id: UUID4
+    ) -> list[Ascent]:
+        """Получение списка подъёмов для конкретного пользователя"""
+        return (
+            (
+                await session.execute(
+                    select(Ascent)
+                    .options(selectinload("route"))
+                    .options(selectinload("route.author"))
+                    .options(selectinload("route.images"))
+                    .options(selectinload("user"))
+                    .where(Ascent.user_id == user_id)
+                )
+            )
+            .scalars()
+            .all()
+        )
+
     async def create(
         self, session: AsyncSession, entity: AscentCreate
     ) -> Ascent:
