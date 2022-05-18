@@ -88,6 +88,21 @@ class User(UserBaseWithCreatedAt, SQLModelBaseUserDB, table=True):
         for route in self.routes:  # pylint: disable=not-an-iterable
             route.set_absolute_image_urls(request)
 
+    def __hash__(self):
+        return hash(
+            (
+                self.id,
+                self.first_name,
+                self.last_name,
+                self.username,
+                self.created_at,
+                self.email,
+                self.is_active,
+                self.is_superuser,
+                self.is_verified,
+            )
+        )
+
 
 class UserCreate(UserBase, Email, Password, models.CreateUpdateDictModel):
     """User's creation scheme"""
