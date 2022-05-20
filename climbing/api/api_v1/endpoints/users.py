@@ -13,6 +13,7 @@ from climbing.db.models import Route, User
 from climbing.db.session import get_async_session
 from climbing.schemas import RouteReadWithImages, UserRead
 from climbing.schemas.ascent import AscentReadWithAll
+from climbing.schemas.route import RouteReadWithAll
 
 router = APIRouter()
 
@@ -59,7 +60,7 @@ async def delete_me(
 
 @router.get(
     "/me/routes",
-    response_model=list[RouteReadWithImages],
+    response_model=list[RouteReadWithAll],
     name="users:my_routes",
     responses=responses.LOGIN_REQUIRED,
 )
@@ -73,6 +74,7 @@ async def read_user_routes(
         select(Route)
         .where(Route.author_id == user.id)
         .options(selectinload(Route.images))
+        .options(selectinload(Route.author))
     )
     _routes: list[Route] = (
         (await async_session.execute(statement)).scalars().all()
