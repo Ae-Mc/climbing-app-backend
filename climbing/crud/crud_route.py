@@ -1,5 +1,3 @@
-from typing import Any, Type
-
 from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -15,27 +13,19 @@ from .base import CRUDBase
 class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
     """CRUD class for route models"""
 
-    def __init__(self, model: Type[Route] = Route) -> None:
-        super().__init__(model)
+    select_options = (selectinload(Route.images), selectinload(Route.author))
 
-    async def get(self, session: AsyncSession, row_id: UUID4) -> Route | None:
-        return (
-            await session.execute(
-                select(Route)
-                .options(
-                    selectinload(Route.images), selectinload(Route.author)
-                )
-                .where(Route.id == row_id)
-            )
-        ).scalar_one_or_none()
+    async def get_for_user(
+        self, session: AsyncSession, user_id: UUID4
+    ) -> list[Route]:
+        """Получение списка трасс для пользователя"""
 
-    async def get_all(self, session: AsyncSession) -> list[Route]:
         return (
             (
                 await session.execute(
-                    select(self.model).options(
-                        selectinload(Route.images), selectinload(Route.author)
-                    )
+                    select(self.model)
+                    .options(*self.select_options)
+                    .where(self.model.author_id == user_id)
                 )
             )
             .scalars()
@@ -65,27 +55,11 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
             raise IndexError("Can't find created route")
         return route_instance
 
-    async def update(
-        self,
-        session: AsyncSession,
-        *,
-        db_entity: Route,
-        new_entity: RouteUpdate | dict[str, Any],
-    ) -> Route:
-        print(f"Old: {db_entity}\nNew: {new_entity}")
-        raise Exception("Not impleneted")
-
     async def remove(self, session: AsyncSession, *, row_id: UUID4) -> None:
-        route_instance: Route | None = (
-            await session.execute(
-                select(Route)
-                .where(Route.id == row_id)
-                .options(selectinload(Route.images))
-            )
-        ).scalar_one_or_none()
+        route_instance = await self.get(session, row_id)
         if route_instance is None:
             return
-        images: list[RouteImage] = route_instance.images
+        images = route_instance.images
         for image in images:
             await session.delete(image)
         storage = FileStorage(settings.MEDIA_ROOT)

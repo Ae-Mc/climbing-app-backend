@@ -1,5 +1,3 @@
-from typing import Type
-
 from fastapi_users_db_sqlmodel import AsyncSession
 from pydantic import UUID4
 from sqlalchemy.future import select
@@ -14,36 +12,11 @@ from .base import CRUDBase
 class CRUDAscent(CRUDBase[Ascent, AscentCreate, AscentUpdate]):
     """CRUD class for ascent models"""
 
-    def __init__(self, model: Type[Ascent] = Ascent) -> None:
-        super().__init__(model)
-
-    async def get(self, session: AsyncSession, row_id: UUID4) -> Ascent | None:
-        return (
-            await session.execute(
-                select(Ascent)
-                .options(
-                    selectinload(Ascent.route).selectinload(Route.author),
-                    selectinload(Ascent.route).selectinload(Route.images),
-                    selectinload(Ascent.user),
-                )
-                .where(Ascent.id == row_id)
-            )
-        ).scalar_one_or_none()
-
-    async def get_all(self, session: AsyncSession) -> list[Ascent]:
-        return (
-            (
-                await session.execute(
-                    select(Ascent).options(
-                        selectinload(Ascent.route).selectinload(Route.author),
-                        selectinload(Ascent.route).selectinload(Route.images),
-                        selectinload(Ascent.user),
-                    )
-                )
-            )
-            .scalars()
-            .all()
-        )
+    select_options = (
+        selectinload(Ascent.route).selectinload(Route.author),
+        selectinload(Ascent.route).selectinload(Route.images),
+        selectinload(Ascent.user),
+    )
 
     async def get_for_user(
         self, session: AsyncSession, user_id: UUID4
@@ -53,11 +26,7 @@ class CRUDAscent(CRUDBase[Ascent, AscentCreate, AscentUpdate]):
             (
                 await session.execute(
                     select(Ascent)
-                    .options(
-                        selectinload(Ascent.route).selectinload(Route.author),
-                        selectinload(Ascent.route).selectinload(Route.images),
-                        selectinload(Ascent.user),
-                    )
+                    .options(*self.select_options)
                     .where(Ascent.user_id == user_id)
                 )
             )
@@ -74,4 +43,4 @@ class CRUDAscent(CRUDBase[Ascent, AscentCreate, AscentUpdate]):
         return await self.get(session, ascent_instance.id)
 
 
-ascent = CRUDAscent()
+ascent = CRUDAscent(Ascent)

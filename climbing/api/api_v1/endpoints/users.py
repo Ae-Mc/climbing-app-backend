@@ -2,7 +2,6 @@ from fastapi import APIRouter, Request, status
 from fastapi.param_functions import Depends
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm import selectinload
 
 from climbing.core import responses
 from climbing.core.security import current_user, fastapi_users
@@ -11,7 +10,7 @@ from climbing.crud import ascent as crud_ascent
 from climbing.crud.crud_route import route as crud_route
 from climbing.db.models import Route, User
 from climbing.db.session import get_async_session
-from climbing.schemas import RouteReadWithImages, UserRead
+from climbing.schemas import UserRead
 from climbing.schemas.ascent import AscentReadWithAll
 from climbing.schemas.route import RouteReadWithAll
 
@@ -70,15 +69,7 @@ async def read_user_routes(
     user: User = Depends(current_user),
 ):
     """Список трасс текущего пользователя"""
-    statement = (
-        select(Route)
-        .where(Route.author_id == user.id)
-        .options(selectinload(Route.images))
-        .options(selectinload(Route.author))
-    )
-    _routes: list[Route] = (
-        (await async_session.execute(statement)).scalars().all()
-    )
+    _routes = await crud_route.get_for_user(async_session, user.id)
     for _route in _routes:
         _route.set_absolute_image_urls(request)
     return _routes

@@ -16,6 +16,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     Read, Update, Delete (CRUD) operations."""
 
     model: Type[ModelType]
+    select_options = tuple()
 
     def __init__(self, model: Type[ModelType]) -> None:
         self.model = model
@@ -32,7 +33,13 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         Returns:
             ModelType | None: row with id == row_id. Could be None
         """
-        return await session.get(self.model, row_id)
+        return (
+            await session.execute(
+                select(self.model)
+                .where(self.model.id == row_id)
+                .options(*self.select_options)
+            )
+        ).scalar_one_or_none()
 
     async def get_all(self, session: AsyncSession) -> list[ModelType]:
         """Get all rows
@@ -43,7 +50,15 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         Returns:
             list[ModelType]: list of rows
         """
-        return (await session.execute(select(self.model))).scalars().all()
+        return (
+            (
+                await session.execute(
+                    select(self.model).options(*self.select_options)
+                )
+            )
+            .scalars()
+            .all()
+        )
 
     async def create(
         self, session: AsyncSession, entity: CreateSchemaType
