@@ -22,8 +22,9 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
         return (
             await session.execute(
                 select(Route)
-                .options(selectinload("images"))
-                .options(selectinload("author"))
+                .options(
+                    selectinload(Route.images), selectinload(Route.author)
+                )
                 .where(Route.id == row_id)
             )
         ).scalar_one_or_none()
@@ -32,9 +33,9 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
         return (
             (
                 await session.execute(
-                    select(self.model)
-                    .options(selectinload("images"))
-                    .options(selectinload("author"))
+                    select(self.model).options(
+                        selectinload(Route.images), selectinload(Route.author)
+                    )
                 )
             )
             .scalars()
@@ -79,7 +80,7 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
             await session.execute(
                 select(Route)
                 .where(Route.id == row_id)
-                .options(selectinload("images"))
+                .options(selectinload(Route.images))
             )
         ).scalar_one_or_none()
         if route_instance is None:

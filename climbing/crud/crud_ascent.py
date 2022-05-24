@@ -6,6 +6,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
 from climbing.db.models import Ascent, AscentCreate, AscentUpdate
+from climbing.db.models.route import Route
 
 from .base import CRUDBase
 
@@ -20,10 +21,11 @@ class CRUDAscent(CRUDBase[Ascent, AscentCreate, AscentUpdate]):
         return (
             await session.execute(
                 select(Ascent)
-                .options(selectinload("route"))
-                .options(selectinload("route.author"))
-                .options(selectinload("route.images"))
-                .options(selectinload("user"))
+                .options(
+                    selectinload(Ascent.route).selectinload(Route.author),
+                    selectinload(Ascent.route).selectinload(Route.images),
+                    selectinload(Ascent.user),
+                )
                 .where(Ascent.id == row_id)
             )
         ).scalar_one_or_none()
@@ -32,11 +34,11 @@ class CRUDAscent(CRUDBase[Ascent, AscentCreate, AscentUpdate]):
         return (
             (
                 await session.execute(
-                    select(Ascent)
-                    .options(selectinload("route"))
-                    .options(selectinload("route.author"))
-                    .options(selectinload("route.images"))
-                    .options(selectinload("user"))
+                    select(Ascent).options(
+                        selectinload(Ascent.route).selectinload(Route.author),
+                        selectinload(Ascent.route).selectinload(Route.images),
+                        selectinload(Ascent.user),
+                    )
                 )
             )
             .scalars()
@@ -51,10 +53,11 @@ class CRUDAscent(CRUDBase[Ascent, AscentCreate, AscentUpdate]):
             (
                 await session.execute(
                     select(Ascent)
-                    .options(selectinload("route"))
-                    .options(selectinload("route.author"))
-                    .options(selectinload("route.images"))
-                    .options(selectinload("user"))
+                    .options(
+                        selectinload(Ascent.route).selectinload(Route.author),
+                        selectinload(Ascent.route).selectinload(Route.images),
+                        selectinload(Ascent.user),
+                    )
                     .where(Ascent.user_id == user_id)
                 )
             )

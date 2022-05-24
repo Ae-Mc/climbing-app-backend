@@ -4,7 +4,6 @@ from fastapi.encoders import jsonable_encoder
 from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm import selectinload
 from sqlmodel import SQLModel
 
 ModelType = TypeVar("ModelType", bound=SQLModel)
@@ -33,7 +32,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         Returns:
             ModelType | None: row with id == row_id. Could be None
         """
-        return await session.get(self.model, row_id, options=[selectinload])
+        return await session.get(self.model, row_id)
 
     async def get_all(self, session: AsyncSession) -> list[ModelType]:
         """Get all rows
