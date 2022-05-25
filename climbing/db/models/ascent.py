@@ -3,10 +3,9 @@ from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from fastapi import Request
-from fastapi_users_db_sqlmodel import Field
 from pydantic import UUID4
 from sqlalchemy import Column, ForeignKey
-from sqlmodel import Relationship, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
 
 from .route import Route
 
@@ -22,11 +21,15 @@ class AscentBase(SQLModel):
 
 
 class AscentCreate(AscentBase):
+    """Модель для добавления подъёма"""
+
     user_id: UUID4 = Field()
     route_id: UUID4 = Field()
 
 
 class AscentUpdate(AscentBase):
+    """Модель для обновления подъёма"""
+
     user_id: UUID4 = Field()
     route_id: UUID4 = Field()
 
@@ -41,7 +44,7 @@ class Ascent(AscentBase, table=True):
             nullable=False,
         )
     )
-    route: "Route" = Relationship()
+    route: Route = Relationship()
     user_id: UUID4 = Field(
         # foreign_key="user.id"
         sa_column=Column(
