@@ -2,6 +2,8 @@
 
 from .ascent import Ascent, AscentBase, AscentCreate, AscentUpdate
 from .category import Category
+from .competition import Competition
+from .competition_participant import CompetitionParticipant
 from .route import Route, RouteBase, RouteCreate, RouteUpdate
 from .route_image import RouteImage
 from .user import (
@@ -20,6 +22,8 @@ __all__ = [
     "AscentCreate",
     "AscentUpdate",
     "Category",
+    "Competition",
+    "CompetitionParticipant",
     "Route",
     "RouteBase",
     "RouteCreate",
