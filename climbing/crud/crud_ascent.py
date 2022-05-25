@@ -34,13 +34,5 @@ class CRUDAscent(CRUDBase[Ascent, AscentCreate, AscentUpdate]):
             .all()
         )
 
-    async def create(
-        self, session: AsyncSession, entity: AscentCreate
-    ) -> Ascent:
-        ascent_instance = self.model(**entity.dict())
-        session.add(ascent_instance)
-        await session.commit()
-        return await self.get(session, ascent_instance.id)
-
 
 ascent = CRUDAscent(Ascent)

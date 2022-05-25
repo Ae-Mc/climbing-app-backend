@@ -76,8 +76,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db_entity = self.model(**entity_data)  # type: ignore
         session.add(db_entity)
         await session.commit()
-        await session.refresh(db_entity)
-        return db_entity
+        return await self.get(session, db_entity.id)
 
     async def update(
         self,
