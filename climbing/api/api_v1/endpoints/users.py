@@ -22,7 +22,7 @@ router = APIRouter()
     response_model=list[UserRead],
     name="users:all_users",
     dependencies=[Depends(current_user)],
-    responses={**responses.LOGIN_REQUIRED},
+    responses=responses.UNAUTHORIZED.docs(),
 )
 async def read_users(
     async_session: AsyncSession = Depends(get_async_session),
@@ -35,7 +35,7 @@ async def read_users(
     "/me",
     status_code=status.HTTP_204_NO_CONTENT,
     name="users:delete_me",
-    responses=responses.LOGIN_REQUIRED,
+    responses=responses.UNAUTHORIZED.docs(),
 )
 async def delete_me(
     async_session: AsyncSession = Depends(get_async_session),
@@ -61,7 +61,7 @@ async def delete_me(
     "/me/routes",
     response_model=list[RouteReadWithAll],
     name="users:my_routes",
-    responses=responses.LOGIN_REQUIRED,
+    responses=responses.UNAUTHORIZED.docs(),
 )
 async def read_user_routes(
     request: Request,
@@ -79,7 +79,7 @@ async def read_user_routes(
     "/me/ascents",
     response_model=list[AscentReadWithAll],
     name="users:my_ascents",
-    responses=responses.LOGIN_REQUIRED,
+    responses=responses.UNAUTHORIZED.docs(),
 )
 async def read_user_ascents(
     request: Request,

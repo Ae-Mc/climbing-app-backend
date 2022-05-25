@@ -1,10 +1,10 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Path, Request
+from fastapi import APIRouter, Body, Depends, Path, Request
 from fastapi_users_db_sqlmodel import AsyncSession
 from pydantic import UUID4
 
-from climbing.core.responses import ID_NOT_FOUND, LOGIN_REQUIRED
+from climbing.core.responses import ID_NOT_FOUND, UNAUTHORIZED
 from climbing.core.security import current_active_user
 from climbing.crud import ascent as crud_ascent
 from climbing.crud import route as crud_route
@@ -32,7 +32,7 @@ async def ascents(
     "",
     response_model=AscentReadWithAll,
     name="ascents:create_ascent",
-    responses={**ID_NOT_FOUND, **LOGIN_REQUIRED},
+    responses={**ID_NOT_FOUND.docs(), **UNAUTHORIZED.docs()},
 )
 async def ascent_create(
     request: Request,
@@ -45,7 +45,7 @@ async def ascent_create(
     """Добавление подъёма"""
     route = await crud_route.get(session, row_id=route_id)
     if route is None:
-        raise HTTPException(404, f"Route with id {route_id} not found")
+        raise ID_NOT_FOUND.exception()
     _ascent = await crud_ascent.create(
         session,
         AscentCreate(
@@ -63,7 +63,7 @@ async def ascent_create(
     "/{ascent_id}",
     response_model=AscentReadWithAll,
     name="ascents:ascent",
-    responses=ID_NOT_FOUND,
+    responses=ID_NOT_FOUND.docs(),
 )
 async def ascent(
     request: Request,
@@ -73,7 +73,7 @@ async def ascent(
     """Получение подъёма по ID"""
     _ascent = await crud_ascent.get(session, ascent_id)
     if _ascent is None:
-        raise HTTPException(404)
+        raise ID_NOT_FOUND.exception()
     _ascent.set_absolute_image_urls(request)
     return _ascent
 
@@ -82,7 +82,7 @@ async def ascent(
     "/{ascent_id}",
     response_model=AscentReadWithAll,
     name="ascents:delete_ascent",
-    responses={**ID_NOT_FOUND, **LOGIN_REQUIRED},
+    responses={**ID_NOT_FOUND.docs(), **UNAUTHORIZED.docs()},
 )
 async def ascent_remove(
     request: Request,
@@ -93,11 +93,9 @@ async def ascent_remove(
     """Удаление подъёма по ID"""
     _ascent = await crud_ascent.get(session, row_id=ascent_id)
     if _ascent.user_id != user.id and not user.is_superuser:
-        raise HTTPException(
-            403, detail="Вы не автор данного подъёма и не администратор"
-        )
+        raise UNAUTHORIZED.exception()
     _ascent = await crud_ascent.remove(session, row_id=ascent_id)
     if _ascent is None:
-        raise HTTPException(404)
+        raise ID_NOT_FOUND.exception()
     _ascent.set_absolute_image_urls(request)
     return _ascent

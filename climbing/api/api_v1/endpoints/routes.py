@@ -11,7 +11,7 @@ from fastapi import (
     Response,
     UploadFile,
 )
-from fastapi.exceptions import HTTPException, RequestValidationError
+from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,7 +41,7 @@ async def routes(
     "/{route_id}",
     response_model=RouteReadWithAll,
     name="routes:route",
-    responses=responses.ID_NOT_FOUND,
+    responses=responses.ID_NOT_FOUND.docs(),
 )
 async def route(
     request: Request,
@@ -51,7 +51,7 @@ async def route(
     "Получение трассы"
     route_instance = await crud_route.get(session, route_id)
     if route_instance is None:
-        raise HTTPException(404)
+        raise responses.ID_NOT_FOUND.exception()
     route_instance.set_absolute_image_urls(request)
     return route_instance
 
@@ -59,7 +59,10 @@ async def route(
 @router.delete(
     "/{route_id}",
     name="routes:delete_route",
-    responses={**responses.LOGIN_REQUIRED, **responses.ID_NOT_FOUND},
+    responses={
+        **responses.UNAUTHORIZED.docs(),
+        **responses.ID_NOT_FOUND.docs(),
+    },
     status_code=204,
 )
 async def delete_route(
@@ -73,10 +76,8 @@ async def delete_route(
         if route_instance.author_id == user.id or user.is_superuser:
             await crud_route.remove(session, row_id=route_id)
             return Response(status_code=204)
-        raise HTTPException(
-            403, detail="Вы не создатель этой трассы и не администратор"
-        )
-    raise HTTPException(404)
+        raise responses.UNAUTHORIZED.exception()
+    raise responses.ID_NOT_FOUND.exception()
 
 
 @router.post(
@@ -84,7 +85,7 @@ async def delete_route(
     response_model=RouteReadWithAll,
     status_code=201,
     name="routes:new",
-    responses=responses.LOGIN_REQUIRED,
+    responses=responses.UNAUTHORIZED.docs(),
 )
 async def create_route(
     request: Request,
