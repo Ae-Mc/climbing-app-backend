@@ -2,7 +2,7 @@ from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
 from fastapi import APIRouter, Depends, Query, Request
-from fastapi_users_db_sqlmodel import AsyncSession, selectinload
+from fastapi_users_db_sqlmodel import UUID4, AsyncSession, selectinload
 from pydantic import BaseModel, Field
 from sqlalchemy import case, desc, func, select
 
@@ -21,6 +21,17 @@ from climbing.schemas.competition_participant import (
 from climbing.schemas.score import Score
 
 router = APIRouter()
+
+
+def get_place_score(place: int, users_count: int) -> float:
+    """Calculates score for place"""
+
+    return sum(
+        [
+            place_to_score_map.get(place, 0)
+            for place in range(place, users_count + place)
+        ]
+    ) / (users_count or 1)
 
 
 @router.get(
@@ -46,6 +57,7 @@ async def rating(
         start_date = end_date + relativedelta(months=-1, days=-15)
     start_date = start_date.date()
 
+    order_by = desc(case(value=Route.category, whens=category_to_score_map))
     # Calculate routes scores
     ascents_with_score = (
         select(
@@ -54,12 +66,7 @@ async def rating(
                 "route_cost"
             ),
             func.row_number()
-            .over(
-                partition_by=Ascent.user_id,
-                order_by=desc(
-                    case(value=Route.category, whens=category_to_score_map)
-                ),
-            )
+            .over(partition_by=Ascent.user_id, order_by=order_by)
             .label("route_priority"),
         )
         .options(*crud_ascent.select_options)
@@ -67,48 +74,50 @@ async def rating(
         .where(Ascent.date <= end_date)
         .join(Route)
         .group_by(Ascent.user_id, Ascent.route_id)
-        .order_by(
-            desc(
-                case(
-                    value=Route.category,
-                    whens=category_to_score_map,
-                )
-            )
-        )
+        .order_by(order_by)
     )
     # pprint((await session.execute(stmt)).first())
-    _ascents: list[Ascent] = (
+    _all_ascents: list[Ascent] = (
         (await session.execute(ascents_with_score)).scalars().all()
     )
-    for ascent in _ascents:
+    for ascent in _all_ascents:
         ascent.set_absolute_image_urls(request)
     outer_statement = (
-        select(Ascent, func.sum(ascents_with_score.c.route_cost))
-        .options(*crud_ascent.select_options)
-        .join(Ascent, ascents_with_score.c.id == Ascent.id)
+        select(User, func.sum(ascents_with_score.c.route_cost).label("score"))
         .where(ascents_with_score.c.route_priority < 6)
-        .group_by(Ascent.user_id)
+        .group_by(User.id)
+        .order_by(desc("score"))
     )
-    ascent: Ascent
-    score: float
-    scores = {
-        ascent.user_id: Score(
-            user=ascent.user,
-            score=score,
-            ascents=[x for x in _ascents if x.user_id == ascent.user_id],
-            participations=[],
-        )
-        for ascent, score in (await session.execute(outer_statement)).all()
-    }
 
     users: list[User] = (
         (await session.execute(select(User).options())).scalars().all()
     )
 
-    for user in users:
-        if user.id not in scores:
+    user: User
+    routes_competition_table: dict[float, list[User]] = {}
+    users_with_score: list[User] = []
+    for user, score in (await session.execute(outer_statement)).all():
+        users_with_score.append(user)
+        if score not in routes_competition_table:
+            routes_competition_table[score] = []
+        routes_competition_table[score].append(user)
+
+    routes_competition_table[0] = list(
+        filter(lambda x: x not in users_with_score, users)
+    )
+    scores: dict[UUID4, Score] = {}
+    place = 0
+    previous_score = -1.0
+    for score, users in sorted(
+        routes_competition_table.items(), key=lambda x: x[0], reverse=True
+    ):
+        if score != previous_score:
+            place += 1
+            previous_score = score
+        rating_score = get_place_score(place, len(users) or 1)
+        for user in users:
             scores[user.id] = Score(
-                user=user, score=0, ascents=[], participations=[]
+                user=user, score=rating_score, ascents_score=score
             )
 
     # Calculate competitions scores
@@ -131,38 +140,20 @@ async def rating(
         .all()
     )
 
-    score: Score
-    for user_id, score in scores.items():
-        participations = [
-            x for x in competition_participants if x.user_id == user_id
+    for participant in competition_participants:
+        current_score = scores[participant.user_id]
+        current_score.participations.append(
+            CompetitionParticipantReadWithAll.from_orm(participant)
+        )
+        participants_on_same_place = [
+            _participant
+            for _participant in participant.competition.participants
+            if _participant.place == participant.place
         ]
-        for participation in participations:
-            score.participations.append(
-                CompetitionParticipantReadWithAll.from_orm(participation)
-            )
-            number_of_participants_on_same_place = len(
-                [
-                    0
-                    for participant in participation.competition.participants
-                    if participant.place == participation.place
-                ]
-            )
-            competition_score = (
-                sum(
-                    [
-                        place_to_score_map.get(place, 0)
-                        for place in range(
-                            participation.place,
-                            number_of_participants_on_same_place
-                            + participation.place,
-                        )
-                    ]
-                )
-                / number_of_participants_on_same_place
-                * participation.competition.ratio
-            )
-
-            score.score += competition_score
+        current_score.score += (
+            get_place_score(place, len(participants_on_same_place))
+            * participant.competition.ratio
+        )
     return sorted(scores.values(), key=lambda score: score.score, reverse=True)
 
 
