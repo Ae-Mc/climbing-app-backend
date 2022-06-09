@@ -1,7 +1,6 @@
 from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm import selectinload
 
 from climbing.api.deps import FileStorage
 from climbing.core.config import settings
@@ -12,8 +11,6 @@ from .base import CRUDBase
 
 class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
     """CRUD class for route models"""
-
-    select_options = (selectinload(Route.images), selectinload(Route.author))
 
     async def get_for_user(
         self, session: AsyncSession, user_id: UUID4

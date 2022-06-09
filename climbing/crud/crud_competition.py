@@ -19,13 +19,6 @@ class CRUDCompetition(
 ):
     """CRUD class for competition models"""
 
-    select_options = (
-        selectinload(Competition.organizer),
-        selectinload(Competition.participants).selectinload(
-            CompetitionParticipant.user
-        ),
-    )
-
     async def add_participant(
         self, session: AsyncSession, entity: CompetitionParticipantCreate
     ) -> CompetitionParticipant:

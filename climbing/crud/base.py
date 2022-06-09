@@ -1,6 +1,7 @@
 from typing import Any, Generic, Type, TypeVar
 
 from fastapi.encoders import jsonable_encoder
+from fastapi_users_db_sqlmodel import selectinload
 from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -16,7 +17,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     Read, Update, Delete (CRUD) operations."""
 
     model: Type[ModelType]
-    select_options = tuple()
+    select_options: list = [selectinload("*")]
 
     def __init__(self, model: Type[ModelType]) -> None:
         self.model = model
