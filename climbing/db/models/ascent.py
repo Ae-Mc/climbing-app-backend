@@ -57,6 +57,5 @@ class Ascent(AscentBase, table=True):
     def set_absolute_image_urls(self, request: Request) -> None:
         """Устанавливает абсолютные, а не относительные URL-адреса для
         изображений"""
-        if self.route is not None:
-            # pylint: disable=no-member
-            self.route.set_absolute_image_urls(request)
+        # pylint: disable=no-member
+        self.route.set_absolute_image_urls(request)

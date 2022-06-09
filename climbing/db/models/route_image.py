@@ -11,22 +11,23 @@ if TYPE_CHECKING:
 
 
 class BaseRouteImage(SQLModel):
-    """Базовая модель для хранения изображения"""
+    """Базовая модель для хранения изображений трасс"""
 
     url: str
 
     def set_absolute_url(self, request: Request):
         """Устанавливает абсолютный, а не относительный URL-адрес для
         изображения"""
+        if "://" in self.url:
+            return
         url_obj = request.url
-        if url_obj.port is None:
-            port = ""
-        else:
-            port = f":{url_obj.port}"
+        port = "" if url_obj.port is None else ":" + url_obj.port
         self.url = f"{url_obj.scheme}://{url_obj.hostname}{port}/{self.url}"
 
 
 class RouteImage(BaseRouteImage, table=True):
+    """Полная таблица для хранения изображений трасс"""
+
     id: UUID4 = Field(default_factory=uuid4, primary_key=True)
     url: str = Field(max_length=300)
     route_id: UUID4 = Field(foreign_key="route.id")
