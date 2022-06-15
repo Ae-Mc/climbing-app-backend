@@ -15,6 +15,7 @@ from climbing.db.models import Route, User
 from climbing.db.session import get_async_session
 from climbing.schemas import UserRead
 from climbing.schemas.ascent import AscentReadWithAll
+from climbing.schemas.expiring_ascent import ExpiringAscent
 from climbing.schemas.route import RouteReadWithAll
 
 router = APIRouter()
@@ -98,7 +99,7 @@ async def read_user_ascents(
 
 @router.get(
     "/me/ascents/expiring",
-    response_model=list[AscentReadWithAll],
+    response_model=list[ExpiringAscent],
     name="users:my_ascents",
     responses=responses.UNAUTHORIZED.docs(),
 )
@@ -120,7 +121,17 @@ async def read_user_expiring_ascents(
     )
     for ascent in ascents:
         ascent.set_absolute_image_urls(request)
-    return ascents
+    return sorted(
+        list(
+            map(
+                lambda ascent: ExpiringAscent(
+                    time_to_expire=ascent.date - start_date, ascent=ascent
+                ),
+                ascents,
+            )
+        ),
+        key=lambda x: x.time_to_expire,
+    )
 
 
 router.include_router(fastapi_users.get_users_router())
