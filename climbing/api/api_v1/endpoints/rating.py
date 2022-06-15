@@ -151,7 +151,7 @@ async def rating(
             if _participant.place == participant.place
         ]
         current_score.score += (
-            get_place_score(place, len(participants_on_same_place))
+            get_place_score(participant.place, len(participants_on_same_place))
             * participant.competition.ratio
         )
     return sorted(scores.values(), key=lambda score: score.score, reverse=True)
