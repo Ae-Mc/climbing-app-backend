@@ -1,10 +1,10 @@
 from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query
 from fastapi_users_db_sqlmodel import UUID4, AsyncSession, selectinload
 from pydantic import BaseModel, Field
-from sqlalchemy import case, desc, func, select
+from sqlalchemy import case, desc, func, or_, select
 
 from climbing.core.score_maps import category_to_score_map, place_to_score_map
 from climbing.crud import ascent as crud_ascent
@@ -31,7 +31,7 @@ def get_place_score(place: int, users_count: int) -> float:
             place_to_score_map.get(place, 0)
             for place in range(place, users_count + place)
         ]
-    ) / (users_count or 1)
+    ) / (users_count)
 
 
 @router.get(
@@ -40,7 +40,6 @@ def get_place_score(place: int, users_count: int) -> float:
     response_model=list[Score],
 )
 async def rating(
-    request: Request,
     session: AsyncSession = Depends(get_async_session),
     start_date: datetime = Query(None),
     end_date: datetime = Query(None),
@@ -57,16 +56,14 @@ async def rating(
         start_date = end_date + relativedelta(months=-1, days=-15)
     start_date = start_date.date()
 
-    order_by = desc(case(value=Route.category, whens=category_to_score_map))
+    categories_case = case(value=Route.category, whens=category_to_score_map)
     # Calculate routes scores
     ascents_with_score = (
         select(
             Ascent,
-            case(value=Route.category, whens=category_to_score_map).label(
-                "route_cost"
-            ),
+            categories_case.label("route_cost"),
             func.row_number()
-            .over(partition_by=Ascent.user_id, order_by=order_by)
+            .over(partition_by=Ascent.user_id, order_by=desc(categories_case))
             .label("route_priority"),
         )
         .options(*crud_ascent.select_options)
@@ -74,37 +71,34 @@ async def rating(
         .where(Ascent.date <= end_date)
         .join(Route)
         .group_by(Ascent.user_id, Ascent.route_id)
-        .order_by(order_by)
+        .order_by(desc("route_priority"))
     )
-    # pprint((await session.execute(stmt)).first())
-    _all_ascents: list[Ascent] = (
-        (await session.execute(ascents_with_score)).scalars().all()
-    )
-    for ascent in _all_ascents:
-        ascent.set_absolute_image_urls(request)
-    outer_statement = (
-        select(User, func.sum(ascents_with_score.c.route_cost).label("score"))
-        .where(ascents_with_score.c.route_priority < 6)
+    subq = ascents_with_score.subquery()
+    users_with_ascents_score = (
+        select(
+            User, func.coalesce(func.sum(subq.c.route_cost), 0).label("score")
+        )
+        .outerjoin_from(User, subq, subq.c.user_id == User.id)
+        .where(
+            or_(
+                subq.c.route_priority < 6,
+                # pylint: disable=singleton-comparison
+                subq.c.route_priority == None,  # noqa: E711
+            )
+        )
         .group_by(User.id)
         .order_by(desc("score"))
     )
 
-    users: list[User] = (
-        (await session.execute(select(User).options())).scalars().all()
-    )
-
     user: User
     routes_competition_table: dict[float, list[User]] = {}
-    users_with_score: list[User] = []
-    for user, score in (await session.execute(outer_statement)).all():
-        users_with_score.append(user)
-        if score not in routes_competition_table:
-            routes_competition_table[score] = []
-        routes_competition_table[score].append(user)
+    for user, ascents_score in (
+        await session.execute(users_with_ascents_score)
+    ).all():
+        if ascents_score not in routes_competition_table:
+            routes_competition_table[ascents_score] = []
+        routes_competition_table[ascents_score].append(user)
 
-    routes_competition_table[0] = list(
-        filter(lambda x: x not in users_with_score, users)
-    )
     scores: dict[UUID4, Score] = {}
     place = 0
     previous_score = -1.0
