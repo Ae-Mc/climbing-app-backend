@@ -1,3 +1,6 @@
+from datetime import datetime
+
+from dateutil.relativedelta import relativedelta
 from fastapi import APIRouter, Request, status
 from fastapi.param_functions import Depends
 from sqlalchemy.ext.asyncio.session import AsyncSession
@@ -88,6 +91,33 @@ async def read_user_ascents(
 ):
     """Список подъёмов текущего пользователя"""
     ascents = await crud_ascent.get_for_user(async_session, user.id)
+    for ascent in ascents:
+        ascent.set_absolute_image_urls(request)
+    return ascents
+
+
+@router.get(
+    "/me/ascents/expiring",
+    response_model=list[AscentReadWithAll],
+    name="users:my_ascents",
+    responses=responses.UNAUTHORIZED.docs(),
+)
+async def read_user_expiring_ascents(
+    request: Request,
+    async_session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_user),
+):
+    """Список подъёмов текущего пользователя, которые скоро исчезнут из
+    рейтинга"""
+    end_date = datetime.now()
+    end_date = end_date.date() + relativedelta(
+        hours=23, minutes=59, seconds=59
+    )
+    start_date = end_date + relativedelta(months=-1, days=-15)
+
+    ascents = await crud_ascent.get_for_user(
+        async_session, user.id, start_date, end_date
+    )
     for ascent in ascents:
         ascent.set_absolute_image_urls(request)
     return ascents
