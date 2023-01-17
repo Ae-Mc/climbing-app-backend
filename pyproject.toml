@@ -16,10 +16,10 @@ python = "^3.10"
 pynvim = {version = "^0.4.3", optional = true}
 pyright = {version = "^0.0.13", optional = true}
 # End of neovim dependencies
-sqlmodel = {git = "https://github.com/Ae-Mc/sqlmodel", rev = "main"}
 SQLAlchemy = "^1.4.31"
 fastapi-users-db-sqlmodel = "^0.1.1"
 python-dateutil = "^2.8.2"
+sqlmodel = "^0.0.8"
 
 [tool.poetry.dev-dependencies]
 black = "^21.12b0"

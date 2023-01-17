@@ -828,23 +828,16 @@ typing-extensions = ">=3.7.4"
 
 [[package]]
 name = "sqlmodel"
-version = "0"
+version = "0.0.8"
 description = "SQLModel, SQL databases in Python, designed for simplicity, compatibility, and robustness."
 category = "main"
 optional = false
-python-versions = "^3.6.1"
-develop = false
+python-versions = ">=3.6.1,<4.0.0"
 
 [package.dependencies]
-pydantic = "^1.8.2"
-SQLAlchemy = ">=1.4.17,<1.5.0"
+pydantic = ">=1.8.2,<2.0.0"
+SQLAlchemy = ">=1.4.17,<=1.4.41"
 sqlalchemy2-stubs = "*"
-
-[package.source]
-type = "git"
-url = "https://github.com/Ae-Mc/sqlmodel"
-reference = "main"
-resolved_reference = "561a63f5fb97d68f5c8fa39e139cb91d48138bfa"
 
 [[package]]
 name = "starlette"
@@ -938,7 +931,7 @@ neovim = ["pynvim", "pyright"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "c5c15efedc0c116a00585662e3f860ab006d5942a3f991e15b1fbae1db8885c4"
+content-hash = "ff2efa694a398b19f24532f5d402e228739bb0c29008f6f7ffbdd7b4f5813a58"
 
 [metadata.files]
 aiosqlite = [
