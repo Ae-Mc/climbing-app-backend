@@ -108,6 +108,6 @@ async def delete_competition(
     competition = await crud_competition.get(async_session, competition_id)
     if competition is None:
         raise responses.ID_NOT_FOUND.exception()
-    if competition.organizer_id != user.id or not user.is_superuser:
+    if competition.organizer_id != user.id and not user.is_superuser:
         raise responses.UNAUTHORIZED.exception()
     return await crud_competition.remove(async_session, row_id=competition_id)
