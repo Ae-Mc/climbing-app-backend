@@ -111,7 +111,7 @@ async def rating(
         rating_score = get_place_score(place, len(users) or 1)
         for user in users:
             scores[user.id] = Score(
-                user=user, score=rating_score, ascents_score=score
+                user=user, score=rating_score, ascents_score=score, place=place
             )
 
     # Calculate competitions scores
@@ -148,7 +148,16 @@ async def rating(
             get_place_score(participant.place, len(participants_on_same_place))
             * participant.competition.ratio
         )
-    return sorted(scores.values(), key=lambda score: score.score, reverse=True)
+    sorted_scores = sorted(
+        scores.values(), key=lambda score: score.score, reverse=True
+    )
+    if sorted_scores:
+        sorted_scores[0].place = 1
+        for i, score in tuple(enumerate(sorted_scores))[1:]:
+            score.place = sorted_scores[i - 1].place
+            if sorted_scores[i - 1].score != score.score:
+                score.place += 1
+    return sorted_scores
 
 
 class CategoryToScore(BaseModel):
