@@ -10,7 +10,8 @@ from fastapi_users_db_sqlmodel import (
     SQLModelBaseUserDB,
 )
 from fastapi_users_db_sqlmodel.access_token import SQLModelBaseAccessToken
-from sqlmodel import Relationship, SQLModel
+from pydantic import UUID4
+from sqlmodel import Column, ForeignKey, Relationship, SQLModel
 
 if TYPE_CHECKING:
     from climbing.db.models.ascent import Ascent
@@ -20,9 +21,29 @@ if TYPE_CHECKING:
 class AccessToken(SQLModelBaseAccessToken, table=True):
     """Table for storing access tokens"""
 
+    user_id: UUID4 = Field(
+        ...,
+        sa_column=Column(
+            ForeignKey(
+                "user.id", ondelete="CASCADE", name="accesstoken_user_fk"
+            ),
+            nullable=False,
+        ),
+    )
+
 
 class OAuthAccount(SQLModelBaseOAuthAccount, table=True):
     """Table for storing OAuth accounts for each user"""
+
+    user_id: UUID4 = Field(
+        ...,
+        sa_column=Column(
+            ForeignKey(
+                "user.id", ondelete="CASCADE", name="oauthaccount_user_fk"
+            ),
+            nullable=False,
+        ),
+    )
 
 
 class CreatedAt(SQLModel):
