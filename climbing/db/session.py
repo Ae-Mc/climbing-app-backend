@@ -31,10 +31,17 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
 async def get_user_db(
     session: AsyncSession = Depends(get_async_session),
 ) -> AsyncGenerator[UserDatabase, None]:
-    yield UserDatabase(User, session, OAuthAccount)
+    yield UserDatabase(
+        session=session,
+        user_model=User,
+        oauth_account_model=OAuthAccount,
+    )
 
 
 async def get_access_token_db(
     session: AsyncSession = Depends(get_async_session),
 ) -> AsyncGenerator[SQLModelAccessTokenDatabaseAsync, None]:
-    yield SQLModelAccessTokenDatabaseAsync(AccessToken, session)
+    yield SQLModelAccessTokenDatabaseAsync(
+        access_token_model=AccessToken,
+        session=session,
+    )
