@@ -35,7 +35,7 @@ neovim = ["pynvim", "pyright"]
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "1.1.1"
+version = "1.1.2"
 tag_format = "$version"
 
 [build-system]
