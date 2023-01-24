@@ -27,7 +27,6 @@ flake8 = "^4.0.1"
 mypy = "^0.931"
 pycodestyle = "^2.8.0"
 pylint = "^2.12.2"
-pytest = "^5.2"
 uvicorn = "^0.17.0"
 commitizen = "^2.20.4"
 
