@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import Depends
 from fastapi_users import FastAPIUsers
 from fastapi_users.authentication import (
@@ -12,9 +14,8 @@ from fastapi_users.authentication.strategy.db import (
 
 from climbing.core.config import settings
 from climbing.core.user_manager import get_user_manager
-from climbing.db.models import AccessToken, User, UserCreate, UserUpdate
+from climbing.db.models import AccessToken, User, UserCreate
 from climbing.db.session import get_access_token_db
-from climbing.schemas import UserRead
 
 bearer_transport = BearerTransport(settings.AUTH_TOKEN_ENDPOINT_URL)
 
@@ -39,13 +40,9 @@ auth_backend = AuthenticationBackend[UserCreate, User](
     get_strategy=get_strategy,
 )
 
-fastapi_users = FastAPIUsers(
-    auth_backends=[auth_backend],
+fastapi_users = FastAPIUsers[User, UUID](
     get_user_manager=get_user_manager,
-    user_create_model=UserCreate,
-    user_db_model=User,
-    user_model=UserRead,
-    user_update_model=UserUpdate,
+    auth_backends=[auth_backend],
 )
 
 current_user = fastapi_users.current_user()

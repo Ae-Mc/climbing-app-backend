@@ -1,10 +1,11 @@
 from typing import Any
+from uuid import UUID
 
 from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_users import InvalidPasswordException
-from fastapi_users import password as password_module
-from fastapi_users.manager import BaseUserManager, UserAlreadyExists
+from fastapi_users.exceptions import UserAlreadyExists
+from fastapi_users.manager import BaseUserManager, UUIDIDMixin
 
 from climbing.db.models import User, UserCreate
 from climbing.db.session import get_user_db
@@ -13,11 +14,10 @@ from climbing.db.user_database import UserDatabase
 from .private import SECRET
 
 
-class UserManager(BaseUserManager[UserCreate, User]):
+class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
     """User manager from fastapi_users"""
 
     user_db: UserDatabase
-    user_db_model = User
     reset_password_token_secret = SECRET
     verification_token_secret = SECRET
 
@@ -28,13 +28,13 @@ class UserManager(BaseUserManager[UserCreate, User]):
         if user is None:
             # Run the hasher to mitigate timing attack
             # Inspired from Django: https://code.djangoproject.com/ticket/20760
-            password_module.get_password_hash(credentials.password)
+            self.password_helper.hash(credentials.password)
             return None
 
         (
             verified,
             updated_password_hash,
-        ) = password_module.verify_and_update_password(
+        ) = self.password_helper.verify_and_update(
             credentials.password, user.hashed_password
         )
         if not verified:
@@ -64,21 +64,21 @@ class UserManager(BaseUserManager[UserCreate, User]):
 
     async def create(
         self,
-        user: UserCreate,
+        user_create: UserCreate,
         safe: bool = False,
         request: Request | None = None,
     ) -> User:
-        await self.validate_password(user.password, user)
+        await self.validate_password(user_create.password, user_create)
 
-        await self.test_user_existence(user)
+        await self.test_user_existence(user_create)
 
-        hashed_password = password_module.get_password_hash(user.password)
+        hashed_password = self.password_helper.hash(user_create.password)
         user_dict = (
-            user.create_update_dict()
+            user_create.create_update_dict()
             if safe
-            else user.create_update_dict_superuser()
+            else user_create.create_update_dict_superuser()
         )
-        db_user = self.user_db_model(
+        db_user = User(
             **user_dict, hashed_password=hashed_password
         )
         created_user = await self.user_db.create(db_user)
@@ -100,7 +100,7 @@ class UserManager(BaseUserManager[UserCreate, User]):
     async def _update(self, user: User, update_dict: dict[str, Any]) -> User:
         for field, value in update_dict.items():
             await self._update_field(user, field, value)
-        return await self.user_db.update(user)
+        return await self.user_db.update(user, update_dict)
 
     async def _update_field(self, user: User, field: str, value: Any) -> None:
         if field == "username" and value != user.username:
@@ -116,7 +116,7 @@ class UserManager(BaseUserManager[UserCreate, User]):
             user.is_verified = False
         elif field == "password":
             await self.validate_password(value, user)
-            hashed_password = password_module.get_password_hash(value)
+            hashed_password = self.password_helper.hash(value)
             user.hashed_password = hashed_password
         else:
             setattr(user, field, value)

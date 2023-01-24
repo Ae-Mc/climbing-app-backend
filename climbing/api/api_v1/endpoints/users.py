@@ -12,6 +12,7 @@ from climbing.core.user_manager import UserManager, get_user_manager
 from climbing.crud import ascent as crud_ascent
 from climbing.crud.crud_route import route as crud_route
 from climbing.db.models import Route, User
+from climbing.db.models.user import UserUpdate
 from climbing.db.session import get_async_session
 from climbing.schemas import UserRead
 from climbing.schemas.ascent import AscentReadWithAll
@@ -134,4 +135,4 @@ async def read_user_expiring_ascents(
     )
 
 
-router.include_router(fastapi_users.get_users_router())
+router.include_router(fastapi_users.get_users_router(UserRead, UserUpdate))

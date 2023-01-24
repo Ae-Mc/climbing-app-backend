@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, List
 
 from fastapi import Request
-from fastapi_users import models
+from fastapi_users.schemas import BaseUserCreate, BaseUserUpdate
 from fastapi_users_db_sqlmodel import (
     EmailStr,
     Field,
@@ -125,11 +125,11 @@ class User(UserBaseWithCreatedAt, SQLModelBaseUserDB, table=True):
         )
 
 
-class UserCreate(UserBase, Email, Password, models.CreateUpdateDictModel):
+class UserCreate(UserBase, Email, Password, BaseUserCreate):
     """User's creation scheme"""
 
 
-class UserUpdate(FirstAndLastNames, Password, models.CreateUpdateDictModel):
+class UserUpdate(FirstAndLastNames, Password, BaseUserUpdate):
     """User's update scheme"""
 
     oauth_accounts: List[OAuthAccount] | None = None
