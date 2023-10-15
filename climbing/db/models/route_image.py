@@ -21,7 +21,7 @@ class BaseRouteImage(SQLModel):
         if "://" in self.url:
             return
         url_obj = request.url
-        port = "" if url_obj.port is None else ":" + url_obj.port
+        port = "" if url_obj.port is None else ":" + str(url_obj.port)
         self.url = f"{url_obj.scheme}://{url_obj.hostname}{port}/{self.url}"
 
 

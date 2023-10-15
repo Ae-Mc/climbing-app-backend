@@ -1,3 +1,4 @@
+import os
 from typing import Any
 from uuid import UUID
 
@@ -11,7 +12,7 @@ from climbing.db.models import User, UserCreate
 from climbing.db.session import get_user_db
 from climbing.db.user_database import UserDatabase
 
-from .private import SECRET
+SECRET = os.getenv('SECRET')
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
@@ -78,10 +79,9 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
             if safe
             else user_create.create_update_dict_superuser()
         )
-        db_user = User(
-            **user_dict, hashed_password=hashed_password
-        )
-        created_user = await self.user_db.create(db_user)
+        
+        user_dict['hashed_password'] = hashed_password
+        created_user = await self.user_db.create(user_dict)
 
         await self.on_after_register(created_user, request)
 

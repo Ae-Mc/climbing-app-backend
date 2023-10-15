@@ -1,3 +1,4 @@
+from os import path, mkdir
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -12,6 +13,8 @@ app = FastAPI(
 )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+if not path.exists('media'):
+    mkdir('media')
 app.mount(
     "/media",
     StaticFiles(directory=settings.MEDIA_ROOT),
