@@ -153,10 +153,13 @@ async def rating(
     )
     if sorted_scores:
         sorted_scores[0].place = 1
+        place_people_count = 0
         for i, score in tuple(enumerate(sorted_scores))[1:]:
             score.place = sorted_scores[i - 1].place
+            place_people_count += 1
             if sorted_scores[i - 1].score != score.score:
-                score.place += 1
+                score.place += place_people_count
+                place_people_count = 0
     return sorted_scores
 
 
