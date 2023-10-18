@@ -1,7 +1,8 @@
 from datetime import datetime
+from typing import List
 
 from dateutil.relativedelta import relativedelta
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi_users_db_sqlmodel import UUID4, AsyncSession, selectinload
 from pydantic import BaseModel, Field
 from sqlalchemy import case, desc, func, or_, select
@@ -15,6 +16,7 @@ from climbing.db.models.competition_participant import CompetitionParticipant
 from climbing.db.models.route import Route
 from climbing.db.models.user import User
 from climbing.db.session import get_async_session
+from climbing.schemas.ascent import AscentReadWithRoute
 from climbing.schemas.competition_participant import (
     CompetitionParticipantReadWithAll,
 )
@@ -37,13 +39,14 @@ def get_place_score(place: int, users_count: int) -> float:
 @router.get(
     "",
     name="rating:rating",
-    response_model=list[Score],
+    response_model=List[Score],
 )
 async def rating(
+    request: Request,
     session: AsyncSession = Depends(get_async_session),
     start_date: datetime = Query(None),
     end_date: datetime = Query(None),
-):
+) -> List[Score]:
     """Получение подъёмов за последнии полтора месяца для рейтинга"""
 
     if end_date is None:
@@ -111,8 +114,23 @@ async def rating(
         rating_score = get_place_score(place, len(users) or 1)
         for user in users:
             scores[user.id] = Score(
-                user=user, score=rating_score, ascents_score=score, place=place
+                user=user,
+                score=rating_score,
+                ascents_score=score,
+                place=place,
             )
+
+    # Fill ascents property
+    all_ascents = await crud_ascent.get_all(
+        session=session,
+        # pylint: disable=no-member
+        query_modifier=lambda query: query.order_by(Ascent.date.desc()),
+    )
+    for ascent in all_ascents:
+        ascent.route.set_absolute_image_urls(request)
+        scores[ascent.user_id].ascents.append(
+            AscentReadWithRoute.from_orm(ascent)
+        )
 
     # Calculate competitions scores
     competition_participants: list[CompetitionParticipant] = (

@@ -1,10 +1,11 @@
-from typing import Any, Generic, Type, TypeVar
+from typing import Any, Callable, Generic, Type, TypeVar
 
 from fastapi.encoders import jsonable_encoder
 from fastapi_users_db_sqlmodel import selectinload
 from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.sql.selectable import Select
 from sqlmodel import SQLModel
 
 ModelType = TypeVar("ModelType", bound=SQLModel)
@@ -42,7 +43,11 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             )
         ).scalar_one_or_none()
 
-    async def get_all(self, session: AsyncSession) -> list[ModelType]:
+    async def get_all(
+        self,
+        session: AsyncSession,
+        query_modifier: Callable[[Select], Select] = None,
+    ) -> list[ModelType]:
         """Get all rows
 
         Args:
@@ -51,15 +56,11 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         Returns:
             list[ModelType]: list of rows
         """
-        return (
-            (
-                await session.execute(
-                    select(self.model).options(*self.select_options)
-                )
-            )
-            .scalars()
-            .all()
-        )
+        query = select(self.model).options(*self.select_options)
+        if query_modifier is not None:
+            query = query_modifier(query)
+
+        return (await session.execute(query)).scalars().all()
 
     async def create(
         self, session: AsyncSession, entity: CreateSchemaType
@@ -84,7 +85,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         session: AsyncSession,
         *,
         db_entity: ModelType,
-        new_entity: UpdateSchemaType | dict[str, Any]
+        new_entity: UpdateSchemaType | dict[str, Any],
     ) -> ModelType:
         """Update database row
 

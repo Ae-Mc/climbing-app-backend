@@ -1,6 +1,7 @@
 from typing import List
 
 from pydantic import BaseModel, Field
+from climbing.schemas.ascent import AscentReadWithRoute
 
 from climbing.schemas.base_read_classes import UserRead
 from climbing.schemas.competition_participant import (
@@ -23,3 +24,7 @@ class Score(BaseModel):
     participations: List[CompetitionParticipantReadWithAll] = Field(
         [], title="Участия в соревнованиях"
     )
+    ascents: List[AscentReadWithRoute] = Field([], title="Список пролазов")
+
+    class Config:
+        orm_mode = True
