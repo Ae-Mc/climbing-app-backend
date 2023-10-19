@@ -29,10 +29,8 @@ def get_place_score(place: int, users_count: int) -> float:
     """Calculates score for place"""
 
     return sum(
-        [
-            place_to_score_map.get(place, 0)
-            for place in range(place, users_count + place)
-        ]
+        place_to_score_map.get(place, 0)
+        for place in range(place, users_count + place)
     ) / (users_count)
 
 
