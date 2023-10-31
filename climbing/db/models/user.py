@@ -24,9 +24,7 @@ class AccessToken(SQLModelBaseAccessToken, table=True):
     user_id: UUID4 = Field(
         ...,
         sa_column=Column(
-            ForeignKey(
-                "user.id", ondelete="CASCADE", name="accesstoken_user_fk"
-            ),
+            ForeignKey("user.id", ondelete="CASCADE", name="accesstoken_user_fk"),
             nullable=False,
         ),
     )
@@ -38,9 +36,7 @@ class OAuthAccount(SQLModelBaseOAuthAccount, table=True):
     user_id: UUID4 = Field(
         ...,
         sa_column=Column(
-            ForeignKey(
-                "user.id", ondelete="CASCADE", name="oauthaccount_user_fk"
-            ),
+            ForeignKey("user.id", ondelete="CASCADE", name="oauthaccount_user_fk"),
             nullable=False,
         ),
     )
@@ -83,7 +79,13 @@ class Username(SQLModel):
     )
 
 
-class UserBase(FirstAndLastNames, Username):
+class IsStudent(SQLModel):
+    """Model with only is_student field"""
+
+    is_student: bool = Field(False, sa_column_kwargs={"server_default": "0"})
+
+
+class UserBase(FirstAndLastNames, Username, IsStudent):
     """Basic user model, that will be inherited by other models"""
 
 
@@ -129,7 +131,9 @@ class UserCreate(UserBase, Email, Password, BaseUserCreate):
     """User's creation scheme"""
 
 
-class UserUpdate(FirstAndLastNames, Password, BaseUserUpdate):
+class UserUpdate(FirstAndLastNames, Password, IsStudent, BaseUserUpdate):
     """User's update scheme"""
 
+    first_name: str | None
+    last_name: str | None
     oauth_accounts: List[OAuthAccount] | None = None
