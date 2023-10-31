@@ -3,20 +3,22 @@ from typing import List
 
 from dateutil.relativedelta import relativedelta
 from fastapi import APIRouter, Depends, Query, Request
-from fastapi_users_db_sqlmodel import UUID4, AsyncSession, selectinload
+from fastapi_users_db_sqlmodel import UUID4
 from pydantic import BaseModel, Field
 from sqlalchemy import case, desc, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from climbing.core.score_maps import category_to_score_map, place_to_score_map
 from climbing.crud import ascent as crud_ascent
 from climbing.db.models.ascent import Ascent
-from climbing.db.models.category import Category
 from climbing.db.models.competition import Competition
 from climbing.db.models.competition_participant import CompetitionParticipant
 from climbing.db.models.route import Route
 from climbing.db.models.user import User
 from climbing.db.session import get_async_session
 from climbing.schemas.ascent import AscentReadWithRoute
+from climbing.schemas.category_to_score import CategoryToScore
 from climbing.schemas.competition_participant import (
     CompetitionParticipantReadWithAll,
 )
@@ -29,8 +31,7 @@ def get_place_score(place: int, users_count: int) -> float:
     """Calculates score for place"""
 
     return sum(
-        place_to_score_map.get(place, 0)
-        for place in range(place, users_count + place)
+        place_to_score_map.get(place, 0) for place in range(place, users_count + place)
     ) / (users_count)
 
 
@@ -42,16 +43,15 @@ def get_place_score(place: int, users_count: int) -> float:
 async def rating(
     request: Request,
     session: AsyncSession = Depends(get_async_session),
-    start_date: datetime = Query(None),
-    end_date: datetime = Query(None),
+    start_date: datetime | None = Query(None),
+    end_date: datetime | None = Query(None),
+    is_student: bool | None = Query(None),
 ) -> List[Score]:
     """Получение подъёмов за последнии полтора месяца для рейтинга"""
 
     if end_date is None:
         end_date = datetime.now()
-    end_date = end_date.date() + relativedelta(
-        hours=23, minutes=59, seconds=59
-    )
+    end_date = end_date.date() + relativedelta(hours=23, minutes=59, seconds=59)
 
     if start_date is None:
         start_date = end_date + relativedelta(months=-1, days=-15)
@@ -76,9 +76,7 @@ async def rating(
     )
     subq = ascents_with_score.subquery()
     users_with_ascents_score = (
-        select(
-            User, func.coalesce(func.sum(subq.c.route_cost), 0).label("score")
-        )
+        select(User, func.coalesce(func.sum(subq.c.route_cost), 0).label("score"))
         .outerjoin_from(User, subq, subq.c.user_id == User.id)
         .where(
             or_(
@@ -91,11 +89,15 @@ async def rating(
         .order_by(desc("score"))
     )
 
+    if is_student is not None:
+        users_with_ascents_score = users_with_ascents_score.where(
+            User.is_student == is_student
+        )
+
     user: User
     routes_competition_table: dict[float, list[User]] = {}
-    for user, ascents_score in (
-        await session.execute(users_with_ascents_score)
-    ).all():
+    ascents_score: int
+    for user, ascents_score in (await session.execute(users_with_ascents_score)).all():
         if ascents_score not in routes_competition_table:
             routes_competition_table[ascents_score] = []
         routes_competition_table[ascents_score].append(user)
@@ -109,7 +111,7 @@ async def rating(
         if score != previous_score:
             place += 1
             previous_score = score
-        rating_score = get_place_score(place, len(users) or 1)
+        rating_score = get_place_score(place, len(users)) if score > 0 else 0
         for user in users:
             scores[user.id] = Score(
                 user=user,
@@ -119,35 +121,42 @@ async def rating(
             )
 
     # Fill ascents property
-    all_ascents = await crud_ascent.get_all(
+    all_ascents: list[Ascent] = await crud_ascent.get_all(
         session=session,
         # pylint: disable=no-member
         query_modifier=lambda query: query.order_by(Ascent.date.desc()),
     )
+    if is_student is not None:
+        all_ascents = list(
+            filter(lambda ascent: ascent.user.is_student == is_student, all_ascents)
+        )
     for ascent in all_ascents:
         ascent.route.set_absolute_image_urls(request)
-        scores[ascent.user_id].ascents.append(
-            AscentReadWithRoute.from_orm(ascent)
+        scores[ascent.user_id].ascents.append(AscentReadWithRoute.from_orm(ascent))
+
+    competition_participants_query = (
+        select(CompetitionParticipant)
+        .options(
+            selectinload(CompetitionParticipant.competition).selectinload(
+                Competition.participants
+            ),
+            selectinload(CompetitionParticipant.user),
         )
+        .join(Competition)
+        .where(Competition.date >= start_date)
+        .where(Competition.date <= end_date)
+    )
+
+    if is_student is not None:
+        competition_participants_query = competition_participants_query.join(
+            User,
+            isouter=False,
+            onclause=CompetitionParticipant.user_id == User.id,
+        ).where(User.is_student == is_student)
 
     # Calculate competitions scores
     competition_participants: list[CompetitionParticipant] = (
-        (
-            await session.execute(
-                select(CompetitionParticipant)
-                .options(
-                    selectinload(
-                        CompetitionParticipant.competition
-                    ).selectinload(Competition.participants),
-                    selectinload(CompetitionParticipant.user),
-                )
-                .join(Competition)
-                .where(Competition.date >= start_date)
-                .where(Competition.date <= end_date)
-            )
-        )
-        .scalars()
-        .all()
+        (await session.execute(competition_participants_query)).scalars().all()
     )
 
     for participant in competition_participants:
@@ -164,9 +173,7 @@ async def rating(
             get_place_score(participant.place, len(participants_on_same_place))
             * participant.competition.ratio
         )
-    sorted_scores = sorted(
-        scores.values(), key=lambda score: score.score, reverse=True
-    )
+    sorted_scores = sorted(scores.values(), key=lambda score: score.score, reverse=True)
     if sorted_scores:
         sorted_scores[0].place = 1
         place_people_count = 0
@@ -177,13 +184,6 @@ async def rating(
                 score.place += place_people_count
                 place_people_count = 0
     return sorted_scores
-
-
-class CategoryToScore(BaseModel):
-    """Модель для описания цены категории"""
-
-    category: Category = Field(..., title="Категория")
-    score: float = Field(..., title="Количество очков за прохождение")
 
 
 @router.get("/category_score_map", response_model=list[CategoryToScore])
