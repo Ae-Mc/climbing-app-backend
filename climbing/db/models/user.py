@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from enum import Enum
 from typing import TYPE_CHECKING, List
 
 from fastapi import Request
@@ -24,7 +25,9 @@ class AccessToken(SQLModelBaseAccessToken, table=True):
     user_id: UUID4 = Field(
         ...,
         sa_column=Column(
-            ForeignKey("user.id", ondelete="CASCADE", name="accesstoken_user_fk"),
+            ForeignKey(
+                "user.id", ondelete="CASCADE", name="accesstoken_user_fk"
+            ),
             nullable=False,
         ),
     )
@@ -36,7 +39,9 @@ class OAuthAccount(SQLModelBaseOAuthAccount, table=True):
     user_id: UUID4 = Field(
         ...,
         sa_column=Column(
-            ForeignKey("user.id", ondelete="CASCADE", name="oauthaccount_user_fk"),
+            ForeignKey(
+                "user.id", ondelete="CASCADE", name="oauthaccount_user_fk"
+            ),
             nullable=False,
         ),
     )
@@ -79,13 +84,27 @@ class Username(SQLModel):
     )
 
 
+class SexEnum(Enum):
+    male = "male"
+    female = "female"
+
+
 class IsStudent(SQLModel):
     """Model with only is_student field"""
 
-    is_student: bool = Field(False, sa_column_kwargs={"server_default": "0"})
+    is_student: bool = Field(False, sa_column_kwargs={"server_default": "male"})
 
 
-class UserBase(FirstAndLastNames, Username, IsStudent):
+class Sex(SQLModel):
+    """Model with only sex field"""
+
+    sex: SexEnum = Field(
+        SexEnum.male,
+        sa_column_kwargs={"server_default": str(SexEnum.male.value)},
+    )
+
+
+class UserBase(FirstAndLastNames, Username, IsStudent, Sex):
     """Basic user model, that will be inherited by other models"""
 
 
@@ -131,7 +150,7 @@ class UserCreate(UserBase, Email, Password, BaseUserCreate):
     """User's creation scheme"""
 
 
-class UserUpdate(FirstAndLastNames, Password, IsStudent, BaseUserUpdate):
+class UserUpdate(FirstAndLastNames, Password, IsStudent, Sex, BaseUserUpdate):
     """User's update scheme"""
 
     first_name: str | None
