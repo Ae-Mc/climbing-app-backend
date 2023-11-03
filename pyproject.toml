@@ -22,6 +22,7 @@ python-dateutil = "^2.8.2"
 sqlmodel = "^0.0.8"
 pyyaml = "^6.0.1"
 setuptools = "^68.1.0"
+xlsxwriter = "^3.1.9"
 
 [tool.poetry.extras]
 neovim = ["pynvim", "pyright"]
