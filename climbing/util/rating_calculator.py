@@ -86,6 +86,10 @@ class RatingCalculator:
                 users_with_ascents_score = users_with_ascents_score.where(
                     User.is_student == self.filter.is_student
                 )
+            if self.filter.sex is not None:
+                users_with_ascents_score = users_with_ascents_score.where(
+                    User.sex == self.filter.sex
+                )
 
         self.routes_competition_table: dict[float, list[User]] = {}
         user: User
@@ -133,25 +137,46 @@ class RatingCalculator:
                     )
                 )
 
+    def _fill_participants_scores(
+        self,
+        participants: list[CompetitionParticipant],
+        place: int,
+        ratio: float,
+    ):
+        rating_score = self.get_place_score(place, len(participants)) * ratio
+        for participant in participants:
+            if participant.user_id not in self._scores:
+                self._scores[participant.user_id] = Score(
+                    user=UserRead.from_orm(participant.user),
+                    place=-1,
+                )
+            self._scores[participant.user_id].participations.append(
+                CompetitionParticipantReadRating.from_orm(participant)
+            )
+            self._scores[participant.user_id].participations[-1].place = place
+            self._scores[participant.user_id].participations[
+                -1
+            ].score = rating_score
+            self._scores[participant.user_id].score += rating_score
+
     async def fill_other_competition_scores(self) -> None:
         """Add scores from all competitions in database"""
 
         def competition_participants_query_modifier(query: Select) -> Select:
             query = (
                 query.join(Competition)
-                .options(
-                    selectinload(
-                        CompetitionParticipant.competition
-                    ).selectinload(Competition.participants),
-                )
+                .join(User, onclause=User.id == CompetitionParticipant.user_id)
                 .where(Competition.date >= self._start_date)
                 .where(Competition.date <= self._end_date)
+                .order_by(Competition.date, CompetitionParticipant.place)
             )
             if self.filter is not None:
                 if self.filter.is_student is not None:
-                    query = query.join(
-                        User, onclause=User.id == CompetitionParticipant.user_id
-                    ).where(User.is_student == self.filter.is_student)
+                    query = query.where(
+                        User.is_student == self.filter.is_student
+                    )
+                if self.filter.sex is not None:
+                    query = query.where(User.sex == self.filter.sex)
             return query
 
         competition_participants: list[
@@ -161,37 +186,55 @@ class RatingCalculator:
             query_modifier=competition_participants_query_modifier,
         )
 
+        competition_id: UUID4 = None
+        place_people: list[CompetitionParticipant] = []
+        previous_place = 0
         for participant in competition_participants:
-            if participant.user_id not in self._scores:
-                self._scores[participant.user_id] = Score(
-                    user=UserRead.from_orm(participant.user),
-                    place=-1,
+            if participant.competition_id != competition_id:
+                if len(place_people) > 0:
+                    self._fill_participants_scores(
+                        place_people,
+                        real_place,
+                        ratio=place_people[0].competition.ratio,
+                    )
+                real_place = 1
+                previous_place = real_place
+                place_people = [participant]
+                competition_id = participant.competition_id
+            elif previous_place != participant.place:
+                self._fill_participants_scores(
+                    place_people,
+                    real_place,
+                    ratio=place_people[0].competition.ratio,
                 )
-            current_score = self._scores[participant.user_id]
-            current_score.participations.append(
-                CompetitionParticipantReadRating.from_orm(participant)
+                previous_place = participant.place
+                real_place += len(place_people)
+                place_people = [participant]
+            else:
+                place_people.append(participant)
+        if len(place_people) > 0:
+            self._fill_participants_scores(
+                place_people,
+                real_place,
+                ratio=place_people[0].competition.ratio,
             )
-            participants_on_same_place = [
-                _participant
-                for _participant in participant.competition.participants
-                if _participant.place == participant.place
-            ]
-            rating_score = (
-                self.get_place_score(
-                    participant.place, len(participants_on_same_place)
-                )
-                * participant.competition.ratio
-            )
-            current_score.participations[-1].score = rating_score
-            current_score.score += rating_score
 
     async def fill_ascents(self, request: Request) -> None:
         def query_modifier(query: Select) -> Select:
             if self.filter is not None:
+                user_joined = False
                 if self.filter.is_student is not None:
+                    user_joined = True
                     query = query.join(
                         User, onclause=Ascent.user_id == User.id
                     ).where(User.is_student == self.filter.is_student)
+                if self.filter.sex is not None:
+                    if not user_joined:
+                        user_joined = True
+                        query = query.join(
+                            User, onclause=Ascent.user_id == User.id
+                        )
+                    query = query.where(User.sex == self.filter.sex)
             return query.order_by(Ascent.date.desc())
 
         all_ascents: list[Ascent] = await crud_ascent.get_all(

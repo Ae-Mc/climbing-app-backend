@@ -12,6 +12,7 @@ from xlsxwriter.format import Format
 from climbing.core.score_maps import category_to_score_map, place_to_score_map
 from climbing.crud.crud_competition import competition as crud_competition
 from climbing.db.models.competition import Competition
+from climbing.db.models.user import SexEnum
 from climbing.db.session import get_async_session
 from climbing.schemas.base_read_classes import CompetitionRead
 from climbing.schemas.category_to_score import CategoryToScore
@@ -27,15 +28,14 @@ async def prepare_rating(
     session: AsyncSession,
     start_date: datetime | None = None,
     end_date: datetime | None = None,
-    is_student: bool | None = None,
+    rating_filter: RatingFilter = None,
 ) -> RatingCalculator:
     if end_date is None:
         end_date = datetime.now()
 
     calc = RatingCalculator(session=session)
     calc.set_date_range(end_date=end_date, start_date=start_date)
-    if is_student is not None:
-        calc.filter = RatingFilter(is_student=is_student)
+    calc.filter = rating_filter
     await calc.fill_ascents(request=request)
     await calc.calc_routes_competition()
     await calc.fill_other_competition_scores()
@@ -54,6 +54,7 @@ async def rating(
     start_date: datetime | None = Query(None),
     end_date: datetime | None = Query(None),
     is_student: bool | None = Query(None),
+    sex: SexEnum | None = Query(None),
 ):
     """Получение данных по рейтингу. По умолчанию временной интервал — полтора
     месяца с текущей даты"""
@@ -64,7 +65,7 @@ async def rating(
             session=session,
             start_date=start_date,
             end_date=end_date,
-            is_student=is_student,
+            rating_filter=RatingFilter(is_student=is_student, sex=sex),
         )
     ).scores
 
@@ -80,6 +81,7 @@ async def rating_csv(
     start_date: datetime | None = Query(None),
     end_date: datetime | None = Query(None),
     is_student: bool | None = Query(None),
+    sex: SexEnum | None = Query(None),
 ):
     """Получение данных по рейтингу. По умолчанию временной интервал — полтора
     месяца с текущей даты"""
@@ -88,7 +90,7 @@ async def rating_csv(
         session=session,
         start_date=start_date,
         end_date=end_date,
-        is_student=is_student,
+        rating_filter=RatingFilter(is_student=is_student, sex=sex),
     )
     scores = calc.scores
     dataIO = BytesIO()
@@ -110,10 +112,17 @@ async def rating_csv(
     competitions.insert(0, calc.get_ascent_competition())
     format = workbook.add_format()
     format.set_align("center")
-    rating_name = {True: "Студенческий", False: "НеСтуденческий", None: "Общий"}
-    rating_fullname = (
-        f"{rating_name[is_student]} рейтинг на {calc.end_date.date()}"
-    )
+    rating_student_name = {
+        True: "Студенческий ",
+        False: "НеСтуденческий ",
+        None: "Общий ",
+    }
+    rating_sex_name = {
+        SexEnum.male: "Мужской ",
+        SexEnum.female: "Женский ",
+        None: "",
+    }
+    rating_fullname = f"{rating_student_name[is_student]}{rating_sex_name[sex]}рейтинг на {calc.end_date.date()}"
     worksheet.merge_range(
         0,
         0,
