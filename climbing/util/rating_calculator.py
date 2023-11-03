@@ -10,7 +10,10 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import Select
 
 from climbing.core.score_maps import category_to_score_map, place_to_score_map
-from climbing.crud.crud_ascent import ascent as crud_ascent
+from climbing.crud import ascent as crud_ascent
+from climbing.crud import (
+    competition_participant as crud_competition_participant,
+)
 from climbing.db.models.ascent import Ascent
 from climbing.db.models.competition import Competition
 from climbing.db.models.competition_participant import CompetitionParticipant
@@ -132,32 +135,30 @@ class RatingCalculator:
 
     async def fill_other_competition_scores(self) -> None:
         """Add scores from all competitions in database"""
-        competition_participants_query = (
-            select(CompetitionParticipant)
-            .options(
-                selectinload(CompetitionParticipant.competition).selectinload(
-                    Competition.participants
-                ),
-                selectinload(CompetitionParticipant.user),
-            )
-            .join(Competition)
-            .where(Competition.date >= self._start_date)
-            .where(Competition.date <= self._end_date)
-        )
 
-        if self.filter is not None:
-            if self.filter.is_student is not None:
-                competition_participants_query = (
-                    competition_participants_query.join(
-                        User,
-                        isouter=False,
-                        onclause=CompetitionParticipant.user_id == User.id,
-                    ).where(User.is_student == self.filter.is_student)
+        def competition_participants_query_modifier(query: Select) -> Select:
+            query = (
+                query.join(Competition)
+                .options(
+                    selectinload(
+                        CompetitionParticipant.competition
+                    ).selectinload(Competition.participants),
                 )
-        competition_participants: list[CompetitionParticipant] = (
-            (await self.session.execute(competition_participants_query))
-            .scalars()
-            .all()
+                .where(Competition.date >= self._start_date)
+                .where(Competition.date <= self._end_date)
+            )
+            if self.filter is not None:
+                if self.filter.is_student is not None:
+                    query = query.join(
+                        User, onclause=User.id == CompetitionParticipant.user_id
+                    ).where(User.is_student == self.filter.is_student)
+            return query
+
+        competition_participants: list[
+            CompetitionParticipant
+        ] = await crud_competition_participant.get_all(
+            session=self.session,
+            query_modifier=competition_participants_query_modifier,
         )
 
         for participant in competition_participants:
