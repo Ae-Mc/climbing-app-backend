@@ -1,10 +1,11 @@
 from typing import List
 
 from pydantic import BaseModel, Field
-from climbing.schemas.ascent import AscentReadWithRoute
 
+from climbing.schemas.ascent import AscentReadWithRoute
 from climbing.schemas.base_read_classes import UserRead
 from climbing.schemas.competition_participant import (
+    CompetitionParticipantReadRating,
     CompetitionParticipantReadWithAll,
 )
 
@@ -21,7 +22,7 @@ class Score(BaseModel):
         description="По этому параметру строится соревнование, за которое"
         " зачисляются очки рейтинга по стандартной схеме",
     )
-    participations: List[CompetitionParticipantReadWithAll] = Field(
+    participations: List[CompetitionParticipantReadRating] = Field(
         [], title="Участия в соревнованиях"
     )
     ascents: List[AscentReadWithRoute] = Field([], title="Список пролазов")

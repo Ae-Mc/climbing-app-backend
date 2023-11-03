@@ -25,5 +25,9 @@ class CompetitionParticipantReadWithAll(
     pass
 
 
+class CompetitionParticipantReadRating(CompetitionParticipantReadWithAll):
+    score: int = Field(0, title="Полученные за соревнование баллы рейтинга")
+
+
 class CompetitionParticipantCreateScheme(CompetitionParticipantBase):
     user_id: UUID4 = Field(title="ID участника")

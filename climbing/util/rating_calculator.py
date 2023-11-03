@@ -19,7 +19,7 @@ from climbing.db.models.user import User
 from climbing.schemas.ascent import AscentReadWithRoute
 from climbing.schemas.base_read_classes import CompetitionRead, UserRead
 from climbing.schemas.competition_participant import (
-    CompetitionParticipantReadWithAll,
+    CompetitionParticipantReadRating,
 )
 from climbing.schemas.rating_filter import RatingFilter
 from climbing.schemas.score import Score
@@ -98,7 +98,6 @@ class RatingCalculator:
         """Add competition based on ascents to scores dict"""
         place = 0
         previous_score = -1.0
-        competition_fake_id: UUID4 = "00000000-0000-4000-8000-000000000000"
         for score, users in sorted(
             self.routes_competition_table.items(),
             key=lambda x: x[0],
@@ -122,16 +121,12 @@ class RatingCalculator:
                         place=-1,
                     )
                 self._scores[user.id].participations.append(
-                    CompetitionParticipantReadWithAll(
+                    CompetitionParticipantReadRating(
                         id=uuid4(),
                         place=place,
                         user=UserRead.from_orm(user),
-                        competition=CompetitionRead(
-                            id=competition_fake_id,
-                            name="5 лучших пролазов",
-                            date=date.today(),
-                            ratio=1.0,
-                        ),
+                        competition=self.get_ascent_competition(),
+                        score=rating_score,
                     )
                 )
 
@@ -173,19 +168,21 @@ class RatingCalculator:
                 )
             current_score = self._scores[participant.user_id]
             current_score.participations.append(
-                CompetitionParticipantReadWithAll.from_orm(participant)
+                CompetitionParticipantReadRating.from_orm(participant)
             )
             participants_on_same_place = [
                 _participant
                 for _participant in participant.competition.participants
                 if _participant.place == participant.place
             ]
-            current_score.score += (
+            rating_score = (
                 self.get_place_score(
                     participant.place, len(participants_on_same_place)
                 )
                 * participant.competition.ratio
             )
+            current_score.participations[-1].score = rating_score
+            current_score.score += rating_score
 
     async def fill_ascents(self, request: Request) -> None:
         def query_modifier(query: Select) -> Select:
@@ -229,6 +226,17 @@ class RatingCalculator:
             self._end_date + relativedelta(months=-1, days=-15)
         )
 
+    def get_ascent_competition(self) -> CompetitionRead:
+        """Get fake competition based on ascents"""
+
+        competition_fake_id: UUID4 = "00000000-0000-4000-8000-000000000000"
+        return CompetitionRead(
+            id=competition_fake_id,
+            name="5 лучших пролазов",
+            date=self._end_date.date(),
+            ratio=1.0,
+        )
+
     @property
     def scores(self) -> list[Score]:
         sorted_scores = sorted(
@@ -247,6 +255,14 @@ class RatingCalculator:
                     score.place = sorted_scores[i - 1].place
                     place_people_count += 1
         return sorted_scores
+
+    @property
+    def end_date(self) -> datetime:
+        return self._end_date
+
+    @property
+    def start_date(self) -> datetime:
+        return self._start_date
 
     @staticmethod
     def get_place_score(place: int, users_count: int) -> float:
