@@ -54,33 +54,5 @@ class CRUDCompetition(
         await session.commit()
         return await self.get(session, db_entity.id)
 
-    async def remove(
-        self, session: AsyncSession, *, row_id: UUID4
-    ) -> Competition | None:
-        competition_entity = await session.get(
-            Competition,
-            row_id,
-            (
-                selectinload(Competition.participants),
-                selectinload(CompetitionParticipant.user),
-            ),
-        )
-        participants = (
-            (
-                await session.execute(
-                    select(CompetitionParticipant).where(
-                        CompetitionParticipant.competition_id == row_id
-                    )
-                )
-            )
-            .scalars()
-            .all()
-        )
-        for participant in participants:
-            await session.delete(participant)
-        await session.delete(competition_entity)
-        await session.commit()
-        return competition_entity
-
 
 competition = CRUDCompetition(Competition)
