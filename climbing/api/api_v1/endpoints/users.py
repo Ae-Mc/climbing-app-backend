@@ -1,17 +1,35 @@
 from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
-from fastapi import APIRouter, Request, status
+from fastapi import APIRouter, HTTPException, Path, Request, status
 from fastapi.param_functions import Depends
+from fastapi_users.exceptions import UserNotExists
+from pydantic import UUID4
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.sql import Select
 
 from climbing.core import responses
-from climbing.core.security import current_user, fastapi_users
+from climbing.core.security import (
+    current_superuser,
+    current_user,
+    fastapi_users,
+)
 from climbing.core.user_manager import UserManager, get_user_manager
 from climbing.crud import ascent as crud_ascent
-from climbing.crud.crud_route import route as crud_route
+from climbing.crud import competition as crud_competition
+from climbing.crud import (
+    competition_participant as crud_competition_participant,
+)
+from climbing.crud import route as crud_route
 from climbing.db.models import Route, User
+from climbing.db.models.ascent import Ascent, AscentUpdate
+from climbing.db.models.competition import Competition, CompetitionUpdate
+from climbing.db.models.competition_participant import (
+    CompetitionParticipant,
+    CompetitionParticipantUpdate,
+)
+from climbing.db.models.route import RouteUpdate
 from climbing.db.models.user import UserUpdate
 from climbing.db.session import get_async_session
 from climbing.schemas import UserRead
@@ -112,9 +130,7 @@ async def read_user_expiring_ascents(
     """Список подъёмов текущего пользователя, которые скоро исчезнут из
     рейтинга"""
     end_date = datetime.now()
-    end_date = end_date.date() + relativedelta(
-        hours=23, minutes=59, seconds=59
-    )
+    end_date = end_date.date() + relativedelta(hours=23, minutes=59, seconds=59)
     start_date = end_date + relativedelta(months=-1, days=-15)
 
     ascents = await crud_ascent.get_for_user(
@@ -133,6 +149,89 @@ async def read_user_expiring_ascents(
         ),
         key=lambda x: x.time_to_expire,
     )
+
+
+@router.put(
+    "/replace/{user_id}/{replacement_id}",
+    dependencies=(Depends(current_superuser),),
+    responses={
+        **responses.ID_NOT_FOUND.docs(),
+        **responses.UNAUTHORIZED.docs(),
+        **responses.SUPERUSER_REQUIRED.docs(),
+    },
+    status_code=204,
+)
+async def replace_with_new_user(
+    user_id: UUID4 | None = Path(None),
+    replacement_id: UUID4 | None = Path(None),
+    session: AsyncSession = Depends(get_async_session),
+    user_manager: UserManager = Depends(get_user_manager),
+):
+    def participation_query_modifier(query: Select) -> Select:
+        return query.where(CompetitionParticipant.user_id == user_id)
+
+    def ascent_query_modifier(query: Select) -> Select:
+        return query.where(Ascent.user_id == user_id)
+
+    def route_query_modifier(query: Select) -> Select:
+        return query.where(Route.author_id == user_id)
+
+    def competition_query_modifier(query: Select) -> Select:
+        return query.where(Competition.organizer_id == user_id)
+
+    try:
+        user = await user_manager.get(user_id)
+    except UserNotExists:
+        raise HTTPException(
+            status_code=404, detail=f'User with id "{user_id}" not found'
+        )
+    try:
+        replacement = await user_manager.get(replacement_id)
+    except UserNotExists:
+        raise HTTPException(
+            status_code=404, detail=f'User with id "{replacement_id}" not found'
+        )
+    participations = await crud_competition_participant.get_all(
+        session=session, query_modifier=participation_query_modifier
+    )
+    for participation in participations:
+        new_participation = CompetitionParticipantUpdate.from_orm(participation)
+        new_participation.user_id = replacement.id
+        await crud_competition_participant.update(
+            session=session,
+            db_entity=participation,
+            new_entity=new_participation,
+        )
+    ascents = await crud_ascent.get_all(
+        session=session, query_modifier=ascent_query_modifier
+    )
+    for ascent in ascents:
+        new_ascent = AscentUpdate.from_orm(ascent)
+        new_ascent.user_id = replacement.id
+        print(type(new_ascent.date))
+        await crud_ascent.update(
+            session=session, db_entity=ascent, new_entity=new_ascent
+        )
+    routes = await crud_route.get_all(
+        session=session, query_modifier=route_query_modifier
+    )
+    for route in routes:
+        new_route = RouteUpdate.from_orm(route)
+        new_route.author_id = replacement.id
+        await crud_route.update(
+            session=session, db_entity=route, new_entity=new_route
+        )
+    competitions = await crud_competition.get_all(
+        session=session, query_modifier=competition_query_modifier
+    )
+    for competition in competitions:
+        new_competition = CompetitionUpdate.from_orm(competition)
+        new_competition.organizer_id = replacement.id
+        await crud_competition.update(
+            session=session, db_entity=competition, new_entity=new_competition
+        )
+
+    await user_manager.delete(user)
 
 
 router.include_router(fastapi_users.get_users_router(UserRead, UserUpdate))
