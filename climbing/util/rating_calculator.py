@@ -245,7 +245,7 @@ class RatingCalculator:
         )
         if len(sorted_scores) > 0:
             sorted_scores[0].place = 1
-            place_people_count = 0
+            place_people_count = 1
             for i, score in tuple(enumerate(sorted_scores))[1:]:
                 if sorted_scores[i - 1].score != score.score:
                     score.place = (
