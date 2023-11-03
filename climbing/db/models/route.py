@@ -23,6 +23,9 @@ class RouteBase(SQLModel):
     )
     description: str = Field(..., title="Описание трассы")
     creation_date: date = Field(..., title="Дата создания (постановки) трассы")
+    author_id: UUID4 = Field(
+        ..., title="ID автора трассы", foreign_key="user.id"
+    )
 
 
 class RouteCreate(RouteBase):
@@ -54,9 +57,6 @@ class Route(RouteBase, table=True):
 
     id: UUID4 = Field(
         title="ID трассы", primary_key=True, default_factory=uuid4
-    )
-    author_id: UUID4 = Field(
-        ..., title="ID автора трассы", foreign_key="user.id"
     )
     author: User = Relationship()
     images: List[RouteImage] = Relationship(back_populates="route")
