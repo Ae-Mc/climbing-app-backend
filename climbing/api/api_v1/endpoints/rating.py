@@ -70,8 +70,8 @@ async def rating(
 
 
 @router.get(
-    "/csv",
-    name="rating:rating_csv",
+    "/table",
+    name="rating:rating_table",
     response_model=List[Score],
 )
 async def rating_csv(
@@ -110,12 +110,16 @@ async def rating_csv(
     competitions.insert(0, calc.get_ascent_competition())
     format = workbook.add_format()
     format.set_align("center")
+    rating_name = {True: "Студенческий", False: "НеСтуденческий", None: "Общий"}
+    rating_fullname = (
+        f"{rating_name[is_student]} рейтинг на {calc.end_date.date()}"
+    )
     worksheet.merge_range(
         0,
         0,
         0,
         2 + len(competitions),
-        data=f"Общий рейтинг на {calc.end_date.date()}",
+        data=rating_fullname,
         cell_format=format,
     )
     worksheet.write(1, 2 + len(competitions), "Итого баллы")
@@ -149,9 +153,7 @@ async def rating_csv(
         headers={
             "Content-Disposition": (
                 "attachment; filename*=UTF-8''"
-                + urllib.parse.quote(
-                    f"{calc.end_date.date()} рейтинг.xlsx".encode()
-                )
+                + urllib.parse.quote(f"{rating_fullname}.xlsx".encode())
             )
         },
     )
