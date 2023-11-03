@@ -98,14 +98,13 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         Returns:
             ModelType: updated row value
         """
-        entity_data = jsonable_encoder(db_entity)
         if isinstance(new_entity, dict):
             update_data = new_entity
         else:
             update_data = new_entity.dict()
-        for field in entity_data:
+        for field in jsonable_encoder(db_entity):
             if field in update_data:
-                setattr(db_entity, field, entity_data[field])
+                setattr(db_entity, field, update_data[field])
         session.add(db_entity)
         await session.commit()
         await session.refresh(db_entity)
