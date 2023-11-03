@@ -32,8 +32,8 @@ class CompetitionParticipantCreate(CompetitionParticipantBase):
     user_id: UUID4 = Field(..., title="ID участника (пользователя)")
 
 
-class CompetitionParticipantUpdate(CompetitionParticipantBase):
-    """Модель добавления участника соревнований"""
+class CompetitionParticipantUpdate(CompetitionParticipantCreate):
+    """Модель обновления участника соревнований"""
 
     id: UUID4 = Field(default_factory=uuid4, title="ID отношения")
 
