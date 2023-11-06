@@ -29,12 +29,12 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
             .all()
         )
 
-    async def create(
-        self, session: AsyncSession, entity: RouteCreate
-    ) -> Route:
+    async def create(self, session: AsyncSession, entity: RouteCreate) -> Route:
         storage = FileStorage(settings.MEDIA_ROOT)
         images: list[RouteImage] = []
-        entity_data = entity.dict(exclude={"images": True, "author": True})
+        entity_data = entity.dict(
+            exclude={"images": True, "author": True, "author_id": True}
+        )
         route_instance = self.model(**entity_data, author_id=entity.author.id)
         session.add(route_instance)
         await session.commit()

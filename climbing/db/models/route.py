@@ -34,6 +34,7 @@ class RouteCreate(RouteBase):
 
     images: list[UploadFile] = Field(...)
     author: User = Field(..., title="Автор трассы")
+    author_id: UUID4 | None = Field(None)
 
     @validator("images", each_item=True)
     @classmethod
