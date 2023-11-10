@@ -92,10 +92,10 @@ async def ascent_remove(
 ):
     """Удаление подъёма по ID"""
     _ascent = await crud_ascent.get(session, row_id=ascent_id)
+    if _ascent is None:
+        raise ID_NOT_FOUND.exception()
     if _ascent.user_id != user.id and not user.is_superuser:
         raise UNAUTHORIZED.exception()
     _ascent = await crud_ascent.remove(session, row_id=ascent_id)
-    if _ascent is None:
-        raise ID_NOT_FOUND.exception()
     _ascent.set_absolute_image_urls(request)
     return _ascent
