@@ -26,7 +26,7 @@ class CompetitionParticipantReadWithAll(
 
 
 class CompetitionParticipantReadRating(CompetitionParticipantReadWithAll):
-    score: int = Field(0, title="Полученные за соревнование баллы рейтинга")
+    score: float = Field(0, title="Полученные за соревнование баллы рейтинга")
 
 
 class CompetitionParticipantCreateScheme(CompetitionParticipantBase):
