@@ -139,7 +139,11 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
             settings.MAIL_SMTP_HOST, settings.MAIL_SMTP_PORT
         )
         server.login(settings.MAIL_USERNAME, settings.MAIL_PASSWORD)
-        msg = MIMEText(f"Токен сброса пароля: {token}")
+        msg = MIMEText(
+            f"""Для сброса пароля пройдите по ссылке: https://climbing.ae-mc.ru/#/password-reset/{token}
+Или введите токен сброса пароля вручную:
+{token}"""
+        )
         msg["Subject"] = "Сброс пароля"
         server.send_message(
             msg,
