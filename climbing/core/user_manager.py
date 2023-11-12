@@ -1,4 +1,5 @@
-import os
+import smtplib
+from email.mime.text import MIMEText
 from typing import Any
 from uuid import UUID
 
@@ -8,19 +9,18 @@ from fastapi_users import InvalidPasswordException
 from fastapi_users.exceptions import UserAlreadyExists
 from fastapi_users.manager import BaseUserManager, UUIDIDMixin
 
+from climbing.core.config import settings
 from climbing.db.models import User, UserCreate
 from climbing.db.session import get_user_db
 from climbing.db.user_database import UserDatabase
-
-SECRET = os.getenv('SECRET')
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
     """User manager from fastapi_users"""
 
     user_db: UserDatabase
-    reset_password_token_secret = SECRET
-    verification_token_secret = SECRET
+    reset_password_token_secret = settings.SECRET
+    verification_token_secret = settings.SECRET
 
     async def authenticate(
         self, credentials: OAuth2PasswordRequestForm
@@ -79,8 +79,8 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
             if safe
             else user_create.create_update_dict_superuser()
         )
-        
-        user_dict['hashed_password'] = hashed_password
+
+        user_dict["hashed_password"] = hashed_password
         created_user = await self.user_db.create(user_dict)
 
         await self.on_after_register(created_user, request)
@@ -98,28 +98,30 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
             raise UserAlreadyExists()
 
     async def _update(self, user: User, update_dict: dict[str, Any]) -> User:
+        validated_update_dict = {}
         for field, value in update_dict.items():
-            await self._update_field(user, field, value)
-        return await self.user_db.update(user, update_dict)
+            await self._update_field(validated_update_dict, user, field, value)
+        return await self.user_db.update(user, validated_update_dict)
 
-    async def _update_field(self, user: User, field: str, value: Any) -> None:
+    async def _update_field(
+        self, update_dict: dict[str, Any], user: User, field: str, value: Any
+    ) -> None:
         if field == "username" and value != user.username:
             existing_user = await self.user_db.get_by_username(value)
             if existing_user is not None:
                 raise UserAlreadyExists()
-            user.username = value
+            update_dict["username"] = value
         elif field == "email" and value != user.email:
             existing_user = await self.user_db.get_by_email(value)
             if existing_user is not None:
                 raise UserAlreadyExists()
-            user.email = value
-            user.is_verified = False
-        elif field == "password":
+            update_dict["email"] = value
+            update_dict["is_verified"] = False
+        elif field == "password" and value is not None:
             await self.validate_password(value, user)
-            hashed_password = self.password_helper.hash(value)
-            user.hashed_password = hashed_password
+            update_dict["hashed_password"] = self.password_helper.hash(value)
         else:
-            setattr(user, field, value)
+            update_dict["field"] = value
 
     async def validate_password(
         self, password: str, user: UserCreate | User
@@ -129,6 +131,22 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
                 "Пароль слишком короткий: минимум 8 символов"
             )
         return await super().validate_password(password, user)
+
+    async def on_after_forgot_password(
+        self, user: User, token: str, request: Request | None = None
+    ) -> None:
+        server = smtplib.SMTP_SSL(
+            settings.MAIL_SMTP_HOST, settings.MAIL_SMTP_PORT
+        )
+        server.login(settings.MAIL_USERNAME, settings.MAIL_PASSWORD)
+        msg = MIMEText(f"Токен сброса пароля: {token}")
+        msg["Subject"] = "Сброс пароля"
+        server.send_message(
+            msg,
+            from_addr=settings.MAIL_USERNAME,
+            to_addrs=user.email,
+        )
+        return await super().on_after_forgot_password(user, token, request)
 
 
 def get_user_manager(
