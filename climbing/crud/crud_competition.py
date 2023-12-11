@@ -54,5 +54,20 @@ class CRUDCompetition(
         await session.commit()
         return await self.get(session, db_entity.id)
 
+    async def get_for_organizer(
+        self, session: AsyncSession, user_id: UUID4
+    ) -> list[Competition]:
+        query = (
+            select(Competition)
+            .options(
+                selectinload(Competition.participants).selectinload(
+                    CompetitionParticipant.user
+                ),
+                selectinload(Competition.organizer),
+            )
+            .where(Competition.organizer_id == user_id)
+        )
+        return (await session.execute(query)).scalars().all()
+
 
 competition = CRUDCompetition(Competition)

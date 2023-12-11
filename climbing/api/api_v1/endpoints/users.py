@@ -34,6 +34,7 @@ from climbing.db.models.user import UserUpdate
 from climbing.db.session import get_async_session
 from climbing.schemas import UserRead
 from climbing.schemas.ascent import AscentReadWithAll
+from climbing.schemas.competition import CompetitionReadWithAll
 from climbing.schemas.expiring_ascent import ExpiringAscent
 from climbing.schemas.route import RouteReadWithAll
 
@@ -117,6 +118,23 @@ async def read_user_ascents(
 
 
 @router.get(
+    "/me/competitions",
+    name="users:my_competitions",
+    response_model=list[CompetitionReadWithAll],
+    responses=responses.UNAUTHORIZED.docs(),
+)
+async def read_user_ascents(
+    async_session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_user),
+):
+    """Список организованных текущим пользователем соревнований"""
+    competitions = await crud_competition.get_for_organizer(
+        async_session, user.id
+    )
+    return competitions
+
+
+@router.get(
     "/me/ascents/expiring",
     response_model=list[ExpiringAscent],
     name="users:my_ascents",
@@ -130,7 +148,7 @@ async def read_user_expiring_ascents(
     """Список подъёмов текущего пользователя, которые скоро исчезнут из
     рейтинга"""
     end_date = datetime.now()
-    end_date = end_date.date() + relativedelta(hours=23, minutes=59, seconds=59)
+    end_date = end_date.date() + relativedelta(days=2)
     start_date = end_date + relativedelta(months=-1, days=-15)
 
     ascents = await crud_ascent.get_for_user(
@@ -142,7 +160,8 @@ async def read_user_expiring_ascents(
         list(
             map(
                 lambda ascent: ExpiringAscent(
-                    time_to_expire=ascent.date - start_date, ascent=ascent
+                    time_to_expire=ascent.date.date() - start_date,
+                    ascent=ascent,
                 ),
                 ascents,
             )

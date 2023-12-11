@@ -14,6 +14,7 @@ from climbing.db.models.competition_participant import (
 )
 from climbing.db.models.user import User
 from climbing.db.session import get_async_session
+from climbing.schemas.base_read_classes import CompetitionRead
 from climbing.schemas.competition import CompetitionReadWithAll
 from climbing.schemas.competition_participant import (
     CompetitionParticipantCreateScheme,
@@ -32,7 +33,7 @@ async def competitions(
 
 @router.post(
     "",
-    response_model=CompetitionReadWithAll,
+    response_model=CompetitionRead,
     responses={
         **responses.INTEGRITY_ERROR.docs(),
         **responses.UNAUTHORIZED.docs(),
@@ -92,7 +93,7 @@ async def add_participant(
 
 
 @router.delete(
-    "",
+    "/{competition_id}",
     response_model=CompetitionReadWithAll,
     responses={
         **responses.UNAUTHORIZED.docs(),
@@ -100,11 +101,13 @@ async def add_participant(
     },
 )
 async def delete_competition(
-    competition_id: UUID4,
+    competition_id: UUID4 | None = Path(None),
     async_session: AsyncSession = Depends(get_async_session),
     user: User = Depends(current_active_user),
 ):
     """Удаление соревнования"""
+    if competition_id is None:
+        raise responses.ID_NOT_FOUND.exception()
     competition = await crud_competition.get(async_session, competition_id)
     if competition is None:
         raise responses.ID_NOT_FOUND.exception()
