@@ -118,7 +118,7 @@ class User(UserBaseWithCreatedAt, SQLModelBaseUserDB, table=True):
     ascents: List["Ascent"] = Relationship(
         back_populates="user",
         # Instruct the ORM how to track changes to local objects
-        sa_relationship_kwargs={"cascade": "delete"},
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
     )
     oauth_accounts: List[OAuthAccount] = Relationship()
     routes: List["Route"] = Relationship(back_populates="author")

@@ -53,5 +53,5 @@ class Competition(CompetitionBase, table=True):
     participants: List[CompetitionParticipant] = Relationship(
         back_populates="competition",
         # Instruct the ORM how to track changes to local objects
-        sa_relationship_kwargs={"cascade": "delete"},
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
     )
