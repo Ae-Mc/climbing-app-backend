@@ -26,6 +26,7 @@ class RouteBase(SQLModel):
     author_id: UUID4 = Field(
         ..., title="ID автора трассы", foreign_key="user.id"
     )
+    archived: bool = Field(False, sa_column_kwargs={"server_default": "0"})
 
 
 class RouteCreate(RouteBase):
