@@ -92,7 +92,7 @@ class SexEnum(Enum):
 class IsStudent(SQLModel):
     """Model with only is_student field"""
 
-    is_student: bool = Field(False, sa_column_kwargs={"server_default": "male"})
+    is_student: bool = Field(False, sa_column_kwargs={"server_default": "0"})
 
 
 class Sex(SQLModel):
