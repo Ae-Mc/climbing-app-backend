@@ -16,7 +16,7 @@ from climbing.db.models.user import SexEnum
 from climbing.db.session import get_async_session
 from climbing.schemas.base_read_classes import CompetitionRead
 from climbing.schemas.category_to_score import CategoryToScore
-from climbing.schemas.rating_filter import RatingFilter
+from climbing.schemas.filters.rating_filter import RatingFilter
 from climbing.schemas.score import Score
 from climbing.util.rating_calculator import RatingCalculator
 

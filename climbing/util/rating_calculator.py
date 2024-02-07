@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime
 from uuid import uuid4
 
 from dateutil.relativedelta import relativedelta
@@ -6,7 +6,6 @@ from fastapi import Request
 from pydantic import UUID4
 from sqlalchemy import case, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import Select
 
 from climbing.core.score_maps import category_to_score_map, place_to_score_map
@@ -24,7 +23,7 @@ from climbing.schemas.base_read_classes import CompetitionRead, UserRead
 from climbing.schemas.competition_participant import (
     CompetitionParticipantReadRating,
 )
-from climbing.schemas.rating_filter import RatingFilter
+from climbing.schemas.filters.rating_filter import RatingFilter
 from climbing.schemas.score import Score
 
 
