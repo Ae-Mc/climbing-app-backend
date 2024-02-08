@@ -181,8 +181,8 @@ async def read_user_expiring_ascents(
     status_code=204,
 )
 async def replace_with_new_user(
-    user_id: UUID4 | None = Path(None),
-    replacement_id: UUID4 | None = Path(None),
+    user_id: UUID4 = Path(...),
+    replacement_id: UUID4 = Path(...),
     session: AsyncSession = Depends(get_async_session),
     user_manager: UserManager = Depends(get_user_manager),
 ):

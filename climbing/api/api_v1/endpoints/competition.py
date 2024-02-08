@@ -101,13 +101,11 @@ async def add_participant(
     },
 )
 async def delete_competition(
-    competition_id: UUID4 | None = Path(None),
+    competition_id: UUID4 = Path(...),
     async_session: AsyncSession = Depends(get_async_session),
     user: User = Depends(current_active_user),
 ):
     """Удаление соревнования"""
-    if competition_id is None:
-        raise responses.ID_NOT_FOUND.exception()
     competition = await crud_competition.get(async_session, competition_id)
     if competition is None:
         raise responses.ID_NOT_FOUND.exception()

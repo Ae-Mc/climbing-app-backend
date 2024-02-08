@@ -1,4 +1,5 @@
 from typing import Any, Callable, Generic, Type, TypeVar
+from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
 from fastapi_users_db_sqlmodel import selectinload
@@ -108,7 +109,12 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         session.add(db_entity)
         await session.commit()
         await session.refresh(db_entity)
-        return db_entity
+        ident = getattr(db_entity, "id", None)
+        if ident is None or not isinstance(ident, UUID):
+            print(f"No ident: {ident}, (for entity of type {self.model})")
+            return db_entity
+        else:
+            return await self.get(session, ident)
 
     async def remove(
         self, session: AsyncSession, *, row_id: UUID4

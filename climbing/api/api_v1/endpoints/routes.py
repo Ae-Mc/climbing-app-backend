@@ -1,16 +1,7 @@
 from datetime import date
 from uuid import UUID
 
-from fastapi import (
-    APIRouter,
-    Depends,
-    File,
-    Form,
-    Path,
-    Request,
-    Response,
-    UploadFile,
-)
+from fastapi import APIRouter, Depends, File, Form, Path, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -72,12 +63,11 @@ async def delete_route(
 ):
     "Удаление трассы"
     route_instance = await crud_route.get(session, route_id)
-    if route_instance:
-        if route_instance.author_id == user.id or user.is_superuser:
-            await crud_route.remove(session, row_id=route_id)
-            return Response(status_code=204)
+    if route_instance is None:
+        raise responses.ID_NOT_FOUND.exception()
+    if route_instance.author_id != user.id and not user.is_superuser:
         raise responses.UNAUTHORIZED.exception()
-    raise responses.ID_NOT_FOUND.exception()
+    await crud_route.remove(session, row_id=route_id)
 
 
 @router.post(

@@ -1,10 +1,11 @@
 from os import mkdir, path
 
-from climbing.api.api_v1.api import api_router
-from climbing.core.config import settings
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+
+from climbing.api.api_v1.api import api_router
+from climbing.core.config import settings
 
 app = FastAPI(
     contact={
