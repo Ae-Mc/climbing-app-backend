@@ -104,3 +104,28 @@ async def create_route(
         return created_route
     except ValidationError as err:
         raise RequestValidationError(err.raw_errors) from err
+
+
+@router.patch(
+    "/{route_id}/archive",
+    name="routes:archive",
+    responses={
+        **responses.UNAUTHORIZED.docs(),
+        **responses.ID_NOT_FOUND.docs(),
+    },
+    response_model=RouteReadWithAll,
+)
+async def archive_route(
+    request: Request,
+    route_id: UUID = Path(...),
+    session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_active_user),
+):
+    obj = await route(request, route_id, session)
+    if obj.author_id != user.id and not user.is_superuser:
+        raise responses.UNAUTHORIZED.exception()
+    obj.archived = True
+    updated_obj = await crud_route.update(
+        session, db_entity=obj, new_entity=obj
+    )
+    return updated_obj
