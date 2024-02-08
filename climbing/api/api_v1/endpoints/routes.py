@@ -5,13 +5,16 @@ from fastapi import APIRouter, Depends, File, Form, Path, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.selectable import Select
 
 from climbing.core import responses
 from climbing.core.security import current_active_user
 from climbing.crud import route as crud_route
 from climbing.db.models import Category, RouteCreate, User
+from climbing.db.models.route import Route
 from climbing.db.session import get_async_session
 from climbing.schemas import RouteReadWithAll
+from climbing.schemas.filters.routes_filter import RoutesFilter
 
 router = APIRouter()
 
@@ -19,10 +22,19 @@ router = APIRouter()
 @router.get("", response_model=list[RouteReadWithAll], name="routes:all")
 async def routes(
     request: Request,
+    filter: RoutesFilter = Depends(),
     session: AsyncSession = Depends(get_async_session),
 ):
     "Получение списка всех трасс"
-    _routes = await crud_route.get_all(session)
+
+    def query_modifier(query: Select[Route]) -> Select[Route]:
+        if filter.archived is not None:
+            query = query.where(Route.archived == filter.archived)
+        if filter.author_id is not None:
+            query = query.where(Route.author_id == filter.author_id)
+        return query
+
+    _routes = await crud_route.get_all(session, query_modifier)
     for _route in _routes:
         _route.set_absolute_image_urls(request)
     return _routes
