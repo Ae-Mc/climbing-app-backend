@@ -1,10 +1,17 @@
 from typing import List
 
-from fastapi_users_db_sqlmodel import Field
+from pydantic import Field
 
 from climbing.db.models import RouteImage
+from climbing.db.models.route import RouteBase
 
 from .base_read_classes import RouteRead, UserRead
+
+
+class RouteCreateSchema(RouteBase):
+    author_id: None = Field(
+        None, title="Ignore field, will be filled automatically", exclude=True
+    )
 
 
 class RouteReadWithAuthor(RouteRead):
