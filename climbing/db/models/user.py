@@ -12,7 +12,7 @@ from fastapi_users_db_sqlmodel import (
 )
 from fastapi_users_db_sqlmodel.access_token import SQLModelBaseAccessToken
 from pydantic import UUID4
-from sqlmodel import Column, ForeignKey, Relationship, SQLModel
+from sqlmodel import AutoString, Column, ForeignKey, Relationship, SQLModel
 
 if TYPE_CHECKING:
     from climbing.db.models.ascent import Ascent
@@ -58,7 +58,7 @@ class CreatedAt(SQLModel):
 class Email(SQLModel):
     """Model with only email field"""
 
-    email: EmailStr = Field()
+    email: EmailStr = Field(sa_type=AutoString)
 
 
 class FirstAndLastNames(SQLModel):
@@ -101,6 +101,7 @@ class Sex(SQLModel):
     sex: SexEnum = Field(
         SexEnum.male,
         sa_column_kwargs={"server_default": str(SexEnum.male.value)},
+        sa_type=AutoString,
     )
 
 

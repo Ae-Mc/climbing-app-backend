@@ -102,10 +102,8 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         if isinstance(new_entity, dict):
             update_data = new_entity
         else:
-            update_data = new_entity.dict()
-        for field in jsonable_encoder(db_entity):
-            if field in update_data:
-                setattr(db_entity, field, update_data[field])
+            update_data = new_entity.model_dump(exclude_unset=True)
+        db_entity.sqlmodel_update(update_data)
         session.add(db_entity)
         await session.commit()
         await session.refresh(db_entity)

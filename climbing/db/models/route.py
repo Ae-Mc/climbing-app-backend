@@ -1,10 +1,11 @@
+import json
 from datetime import date, datetime, timezone
 from typing import List
 from uuid import uuid4
 
 from fastapi import Request, UploadFile
-from pydantic import UUID4, validator
-from sqlmodel import Field, Relationship, SQLModel
+from pydantic import UUID4, model_validator, validator
+from sqlmodel import AutoString, Field, Relationship, SQLModel
 
 from .category import Category
 from .route_image import RouteImage
@@ -17,16 +18,32 @@ class RouteBase(SQLModel):
     name: str = Field(
         ..., min_length=1, max_length=150, title="Название трассы"
     )
-    category: Category = Field(..., title="Категория трассы")
+    category: Category = Field(
+        ..., title="Категория трассы", sa_type=AutoString
+    )
     mark_color: str = Field(
         ..., min_length=4, max_length=100, title="Цвет меток трассы"
     )
     description: str = Field(..., title="Описание трассы")
     creation_date: date = Field(..., title="Дата создания (постановки) трассы")
+    archived: bool = Field(
+        False,
+        title="Устарела ли трасса (архивная ли она)",
+        sa_column_kwargs={"server_default": "0"},
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_to_json(cls, value):
+        if isinstance(value, str):
+            return cls(**json.loads(value))
+        return value
+
+
+class RouteBaseDB(RouteBase):
     author_id: UUID4 = Field(
         ..., title="ID автора трассы", foreign_key="user.id"
     )
-    archived: bool = Field(False, sa_column_kwargs={"server_default": "0"})
 
 
 class RouteCreate(RouteBase):
@@ -42,19 +59,27 @@ class RouteCreate(RouteBase):
     def validate_image(cls, image: UploadFile):
         """Проверяет, что каждое изображение имеет MIME-тип image"""
 
-        if image.content_type.split("/")[0] != "image":
+        if image.content_type is None:
+            if image.filename is None:
+                is_image = False
+            else:
+                is_image = image.filename.endswith(
+                    ".jpg"
+                ) or image.filename.endswith(".png")
+        else:
+            is_image = image.content_type.split("/")[0] == "image"
+
+        if not is_image:
             raise ValueError("Must have MIME-type image/*")
         return image
 
 
-class RouteUpdate(RouteBase):
+class RouteUpdate(RouteCreate):
     """Модель для обновления трассы. Должна создаваться вручную (не может быть
     использована напрямую как параметр запроса)."""
 
-    images: list[UploadFile] | None = Field(None)
 
-
-class Route(RouteBase, table=True):
+class Route(RouteBaseDB, table=True):
     """Модель для хранения информации о трассе."""
 
     id: UUID4 = Field(

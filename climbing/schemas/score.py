@@ -1,12 +1,11 @@
 from typing import List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from climbing.schemas.ascent import AscentReadWithRoute
 from climbing.schemas.base_read_classes import UserRead
 from climbing.schemas.competition_participant import (
     CompetitionParticipantReadRating,
-    CompetitionParticipantReadWithAll,
 )
 
 
@@ -27,5 +26,4 @@ class Score(BaseModel):
     )
     ascents: List[AscentReadWithRoute] = Field([], title="Список пролазов")
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

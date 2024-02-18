@@ -120,7 +120,9 @@ async def create_route_modern(
         created_route.set_absolute_image_urls(request)
         return created_route
     except ValidationError as err:
-        raise RequestValidationError(err.raw_errors) from err
+        raise RequestValidationError(
+            err.errors(include_input=False, include_url=False)
+        ) from err
 
 
 @router.post(
@@ -156,13 +158,16 @@ async def create_route(
         created_route.set_absolute_image_urls(request)
         return created_route
     except ValidationError as err:
-        raise RequestValidationError(err.raw_errors) from err
+        raise RequestValidationError(
+            err.errors(include_input=False, include_url=False)
+        ) from err
 
 
 @router.patch(
     "/{route_id}/archive",
     name="routes:archive",
     responses={
+        **responses.ACCESS_DENIED.docs(),
         **responses.UNAUTHORIZED.docs(),
         **responses.ID_NOT_FOUND.docs(),
     },
@@ -176,7 +181,7 @@ async def archive_route(
 ):
     obj = await route(request, route_id, session)
     if obj.author_id != user.id and not user.is_superuser:
-        raise responses.UNAUTHORIZED.exception()
+        raise responses.ACCESS_DENIED.exception()
     obj.archived = True
     updated_obj = await crud_route.update(
         session, db_entity=obj, new_entity=obj

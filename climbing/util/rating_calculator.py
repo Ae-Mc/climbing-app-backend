@@ -31,7 +31,7 @@ class RatingCalculator:
     """Users rating calculator class"""
 
     session: AsyncSession
-    categories_case = case(value=Route.category, whens=category_to_score_map)
+    categories_case = case(category_to_score_map, value=Route.category)
     _start_date: datetime
     _end_date: datetime
     routes_competition_table: dict[float, list[User]]
@@ -178,11 +178,11 @@ class RatingCalculator:
                     query = query.where(User.sex == self.filter.sex)
             return query
 
-        competition_participants: list[
-            CompetitionParticipant
-        ] = await crud_competition_participant.get_all(
-            session=self.session,
-            query_modifier=competition_participants_query_modifier,
+        competition_participants: list[CompetitionParticipant] = (
+            await crud_competition_participant.get_all(
+                session=self.session,
+                query_modifier=competition_participants_query_modifier,
+            )
         )
 
         competition_id: UUID4 = None

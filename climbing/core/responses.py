@@ -40,6 +40,11 @@ class ResponseModel:
         return HTTPException(self.code, self.example.detail)
 
 
+ACCESS_DENIED = ResponseModel(
+    403,
+    "You are not owner of this object",
+    ErrorModel(detail="You are not owner of this object"),
+)
 SUPERUSER_REQUIRED = ResponseModel(
     403, "Not a superuser", ErrorModel(detail="You are not a superuser")
 )

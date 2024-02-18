@@ -5,10 +5,11 @@ Revises: d931930fbfbe
 Create Date: 2023-10-17 00:49:01.385311
 
 """
-from alembic import op
-import sqlalchemy as sa
-import fastapi_users_db_sqlmodel
 
+import fastapi_users_db_sqlmodel
+import sqlalchemy as sa
+
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "8a70bb7f92fb"
@@ -27,8 +28,8 @@ def upgrade():
             ),
             existing_nullable=False,
         )
-        meta = sa.MetaData(bind=batch_op.get_bind())
-        meta.reflect(only=("accesstoken",))
+        meta = sa.MetaData()
+        meta.reflect(bind=batch_op.get_bind(), only=("accesstoken",))
         accesstoken = sa.Table("accesstoken", meta)
         constraints = list(
             filter(
@@ -60,8 +61,8 @@ def upgrade():
             ["oauth_name"],
             unique=False,
         )
-        meta = sa.MetaData(bind=batch_op.get_bind())
-        meta.reflect(only=("oauthaccount",))
+        meta = sa.MetaData()
+        meta.reflect(bind=batch_op.get_bind(), only=("oauthaccount",))
         oauthaccount = sa.Table("oauthaccount", meta)
         constraints = list(
             filter(
