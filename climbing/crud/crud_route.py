@@ -1,3 +1,6 @@
+from os import path
+from typing import Any
+
 from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -28,6 +31,34 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
             .scalars()
             .all()
         )
+
+    async def update(
+        self,
+        session: AsyncSession,
+        *,
+        db_entity: Route,
+        new_entity: RouteUpdate | dict[str, Any],
+    ) -> Route:
+        if isinstance(new_entity, RouteUpdate):
+            update_data = new_entity.model_dump(exclude={"images": True})
+        elif isinstance(new_entity, dict[str, Any]):
+            update_data = new_entity
+            update_data.pop("images", None)
+        db_entity = await super().update(
+            session, db_entity=db_entity, new_entity=update_data
+        )
+        storage = FileStorage(settings.MEDIA_ROOT)
+        for image in db_entity.images:
+            await session.delete(image)
+            if storage.exists_relative(path.basename(image.url)):
+                storage.remove_relative(path.basename(image.url))
+        db_entity.images.clear()
+
+        for image in new_entity.images:
+            db_entity.images.append(RouteImage(url=storage.save(image)))
+        session.add(db_entity)
+        await session.commit()
+        return await self.get(session, db_entity.id)
 
     async def create(self, session: AsyncSession, entity: RouteCreate) -> Route:
         storage = FileStorage(settings.MEDIA_ROOT)

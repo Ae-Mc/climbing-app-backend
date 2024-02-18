@@ -1,16 +1,7 @@
 from datetime import date
 from uuid import UUID
 
-from fastapi import (
-    APIRouter,
-    Depends,
-    File,
-    Form,
-    Path,
-    Query,
-    Request,
-    UploadFile,
-)
+from fastapi import APIRouter, Depends, File, Form, Path, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,12 +11,10 @@ from climbing.core import responses
 from climbing.core.security import current_active_user
 from climbing.crud import route as crud_route
 from climbing.db.models import Category, RouteCreate, User
-from climbing.db.models.route import Route
+from climbing.db.models.route import Route, RouteBase, RouteUpdate
 from climbing.db.session import get_async_session
 from climbing.schemas import RouteReadWithAll
-from climbing.schemas.base_read_classes import RouteRead
 from climbing.schemas.filters.routes_filter import RoutesFilter
-from climbing.schemas.route import RouteCreateSchema
 
 router = APIRouter()
 
@@ -93,32 +82,42 @@ async def delete_route(
     await crud_route.remove(session, row_id=route_id)
 
 
-@router.post(
-    "/new",
+@router.put(
+    "/{route_id}",
     response_model=RouteReadWithAll,
-    status_code=201,
-    name="routes:modern_new",
-    responses=responses.UNAUTHORIZED.docs(),
-    include_in_schema=False,
+    name="routes:update",
+    responses={
+        **responses.ACCESS_DENIED.docs(),
+        **responses.UNAUTHORIZED.docs(),
+        **responses.ID_NOT_FOUND.docs(),
+    },
 )
-async def create_route_modern(
+async def update_route(
     request: Request,
-    route_instance: RouteCreateSchema = Form(),
-    author_id: None = Query(None, include_in_schema=False),
+    route_id=Path(...),
+    route_obj: RouteBase = Depends(),
     images: list[UploadFile] = File([], media_type="image/*"),
     author: User = Depends(current_active_user),
     session: AsyncSession = Depends(get_async_session),
 ):
-    "Создание трассы"
+    """Изменение трассы. Попытка вызвать этот метод в Swagger приводит к ошибке
+    — Swagger неправильно выставляет Content-Length"""
+
+    old_db_route = await route(request, route_id, session)
+    if old_db_route.author_id != author.id and author.is_superuser == False:
+        raise responses.ACCESS_DENIED.exception()
     try:
-        route_instance = RouteCreate(
-            **route_instance.dict(),
+        db_route = RouteUpdate(
+            **route_obj.model_dump(),
             author=author,
+            author_id=author.id,
             images=images,
         )
-        created_route = await crud_route.create(session, route_instance)
-        created_route.set_absolute_image_urls(request)
-        return created_route
+        updated_route = await crud_route.update(
+            session, db_entity=old_db_route, new_entity=db_route
+        )
+        updated_route.set_absolute_image_urls(request)
+        return updated_route
     except ValidationError as err:
         raise RequestValidationError(
             err.errors(include_input=False, include_url=False)

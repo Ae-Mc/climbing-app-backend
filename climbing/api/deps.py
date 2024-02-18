@@ -14,6 +14,7 @@ class FileStorage:  # pylint: disable=too-few-public-methods
     Attributes:
         root (str): path to root folder of file storage
     """
+
     root: str
 
     def __init__(self, root: str = settings.MEDIA_ROOT) -> None:
@@ -29,7 +30,7 @@ class FileStorage:  # pylint: disable=too-few-public-methods
         """
         filename = uuid4().hex + path.splitext(file.filename)[1]
         # Use unix separators
-        full_filename = urljoin(self.root + '/', filename)
+        full_filename = urljoin(self.root + "/", filename)
         with open(full_filename, "wb") as out_file:
             copyfileobj(file.file, out_file)
         return full_filename
@@ -39,6 +40,12 @@ class FileStorage:  # pylint: disable=too-few-public-methods
 
     def remove_relative(self, filename: str) -> None:
         remove(path.join(self.root, filename))
+
+    def exists(self, filename: str) -> bool:
+        return path.exists(filename)
+
+    def exists_relative(self, filename) -> bool:
+        return path.exists(path.join(self.root, filename))
 
 
 def multipart_form_data(content_type: str = Header(...)):
