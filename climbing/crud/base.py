@@ -1,7 +1,6 @@
 from typing import Any, Callable, Generic, Type, TypeVar
 from uuid import UUID
 
-from fastapi.encoders import jsonable_encoder
 from fastapi_users_db_sqlmodel import selectinload
 from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -75,7 +74,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         Returns:
             ModelType:
         """
-        entity_data = jsonable_encoder(entity)
+        entity_data = entity.model_dump()
         db_entity = self.model(**entity_data)  # type: ignore
         session.add(db_entity)
         await session.commit()
