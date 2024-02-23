@@ -59,7 +59,7 @@ class RatingCalculator:
             .where(Ascent.date >= self._start_date)
             .where(Ascent.date <= self._end_date)
             .join(Route)
-            .group_by(Ascent.user_id, Ascent.route_id)
+            # .group_by(Ascent.user_id, Ascent.route_id)
             .order_by(desc("route_priority"))
         )
         subq = ascents_with_score.subquery()
