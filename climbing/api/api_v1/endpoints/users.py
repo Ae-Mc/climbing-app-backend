@@ -214,7 +214,9 @@ async def replace_with_new_user(
         session=session, query_modifier=participation_query_modifier
     )
     for participation in participations:
-        new_participation = CompetitionParticipantUpdate.from_orm(participation)
+        new_participation = CompetitionParticipantUpdate.model_validate(
+            participation
+        )
         new_participation.user_id = replacement.id
         await crud_competition_participant.update(
             session=session,
@@ -225,7 +227,7 @@ async def replace_with_new_user(
         session=session, query_modifier=ascent_query_modifier
     )
     for ascent in ascents:
-        new_ascent = AscentUpdate.from_orm(ascent)
+        new_ascent = AscentUpdate.model_validate(ascent)
         new_ascent.user_id = replacement.id
         print(type(new_ascent.date))
         await crud_ascent.update(
@@ -235,7 +237,7 @@ async def replace_with_new_user(
         session=session, query_modifier=route_query_modifier
     )
     for route in routes:
-        new_route = RouteUpdate.from_orm(route)
+        new_route = RouteUpdate.model_validate(route)
         new_route.author_id = replacement.id
         await crud_route.update(
             session=session, db_entity=route, new_entity=new_route
@@ -244,7 +246,7 @@ async def replace_with_new_user(
         session=session, query_modifier=competition_query_modifier
     )
     for competition in competitions:
-        new_competition = CompetitionUpdate.from_orm(competition)
+        new_competition = CompetitionUpdate.model_validate(competition)
         new_competition.organizer_id = replacement.id
         await crud_competition.update(
             session=session, db_entity=competition, new_entity=new_competition

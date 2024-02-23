@@ -130,7 +130,7 @@ class RatingCalculator:
                     CompetitionParticipantReadRating(
                         id=uuid4(),
                         place=place,
-                        user=UserRead.from_orm(user),
+                        user=UserRead.model_validate(user),
                         competition=self.get_ascent_competition(),
                         score=rating_score,
                     )
@@ -146,11 +146,11 @@ class RatingCalculator:
         for participant in participants:
             if participant.user_id not in self._scores:
                 self._scores[participant.user_id] = Score(
-                    user=UserRead.from_orm(participant.user),
+                    user=UserRead.model_validate(participant.user),
                     place=-1,
                 )
             self._scores[participant.user_id].participations.append(
-                CompetitionParticipantReadRating.from_orm(participant)
+                CompetitionParticipantReadRating.model_validate(participant)
             )
             self._scores[participant.user_id].participations[-1].place = place
             self._scores[participant.user_id].participations[
@@ -237,22 +237,20 @@ class RatingCalculator:
             return query.order_by(Ascent.date.desc())
 
         all_ascents: list[Ascent] = await crud_ascent.get_all(
-            session=self.session,
-            query_modifier=query_modifier,
+            session=self.session, query_modifier=query_modifier
         )
         for ascent in all_ascents:
             ascent.route.set_absolute_image_urls(request)
+            ascent_read = AscentReadWithRoute.model_validate(ascent)
             if ascent.user_id in self._scores:
-                self._scores[ascent.user_id].ascents.append(
-                    AscentReadWithRoute.from_orm(ascent)
-                )
+                self._scores[ascent.user_id].ascents.append(ascent_read)
             else:
                 self._scores[ascent.user_id] = Score(
-                    user=UserRead.from_orm(ascent.user),
+                    user=UserRead.model_validate(ascent.user),
                     place=-1,
                     score=0,
                     ascents_score=0,
-                    ascents=[AscentReadWithRoute.from_orm(ascent)],
+                    ascents=[ascent_read],
                 )
 
     def set_date_range(

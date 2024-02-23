@@ -7,7 +7,6 @@ from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from xlsxwriter import Workbook
-from xlsxwriter.format import Format
 
 from climbing.core.score_maps import category_to_score_map, place_to_score_map
 from climbing.crud.crud_competition import competition as crud_competition
@@ -100,7 +99,7 @@ async def rating_csv(
     worksheet.write(1, 1, "Имя участника")
     competitions: list[CompetitionRead] = list(
         map(
-            CompetitionRead.from_orm,
+            CompetitionRead.model_validate,
             await crud_competition.get_all(
                 session=session,
                 query_modifier=lambda query: query.where(
