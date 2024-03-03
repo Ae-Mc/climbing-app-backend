@@ -15,6 +15,6 @@ place_to_score_map: dict[int, float] = {
     7: 44,
     8: 39,
     9: 35,
-    **{10 + i:32 - i * 2 for i in range(12)},
-    **{22 + i:9 - i * 2 for i in range(9)},
+    **{10 + i: 32 - i * 2 for i in range(12)},
+    **{22 + i: 9 - i for i in range(9)},
 }
