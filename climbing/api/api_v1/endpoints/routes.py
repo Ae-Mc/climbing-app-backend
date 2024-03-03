@@ -1,14 +1,25 @@
 from datetime import date
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, Path, Request, UploadFile
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    Path,
+    Query,
+    Request,
+    UploadFile,
+)
 from fastapi.exceptions import RequestValidationError
+from fastapi_users.exceptions import UserNotExists
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.selectable import Select
 
 from climbing.core import responses
 from climbing.core.security import current_active_user
+from climbing.core.user_manager import UserManager, get_user_manager
 from climbing.crud import route as crud_route
 from climbing.db.models import Category, RouteCreate, User
 from climbing.db.models.route import Route, RouteBase, RouteUpdate
@@ -95,17 +106,29 @@ async def delete_route(
 async def update_route(
     request: Request,
     route_id=Path(...),
+    new_author_id: UUID | None = Query(None),
     route_obj: RouteBase = Depends(),
     images: list[UploadFile] = File([], media_type="image/*"),
-    author: User = Depends(current_active_user),
+    current_user: User = Depends(current_active_user),
+    user_manager: UserManager = Depends(get_user_manager),
     session: AsyncSession = Depends(get_async_session),
 ):
     """Изменение трассы. Попытка вызвать этот метод в Swagger приводит к ошибке
     — Swagger неправильно выставляет Content-Length"""
 
     old_db_route = await route(request, route_id, session)
-    if old_db_route.author_id != author.id and author.is_superuser == False:
+    if (
+        not current_user.is_superuser
+        and old_db_route.author_id != current_user.id
+    ):
         raise responses.ACCESS_DENIED.exception()
+    if new_author_id is None:
+        author = old_db_route.author
+    else:
+        try:
+            author = await user_manager.get(new_author_id)
+        except UserNotExists:
+            raise responses.ID_NOT_FOUND.exception()
     try:
         db_route = RouteUpdate(
             **route_obj.model_dump(),
