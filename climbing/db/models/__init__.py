@@ -7,7 +7,7 @@ from .competition_participant import CompetitionParticipant
 from .route import Route, RouteBase, RouteBaseDB, RouteCreate, RouteUpdate
 from .route_image import RouteImage
 from .user import (
-    AccessToken,
+    AccessRefreshToken,
     User,
     UserBase,
     UserBaseWithCreatedAt,
@@ -16,7 +16,7 @@ from .user import (
 )
 
 __all__ = [
-    "AccessToken",
+    "AccessRefreshToken",
     "Ascent",
     "AscentBase",
     "AscentCreate",

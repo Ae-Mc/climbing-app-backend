@@ -64,3 +64,6 @@ INTEGRITY_ERROR = ResponseModel(
     "Integrity error occured",
     ErrorModel(detail="Integrity error occured"),
 )
+INVALID_TOKEN = ResponseModel(
+    401, "Invalid token", ErrorModel(detail="invalid_token")
+)

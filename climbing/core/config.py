@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     """Class for storing app settings"""
 
     ACCESS_TOKEN_EXPIRE_TIME: timedelta = timedelta(hours=1)
+    REFRESH_TOKEN_EXPIRE_TIME: timedelta = timedelta(days=180)
     API_V1_STR: str = "/api/v1"
     SQLALCHEMY_DATABASE_URI: str | None = None
     AUTH_TOKEN_ENDPOINT_URL: str = f"{API_V1_STR}/auth/login"

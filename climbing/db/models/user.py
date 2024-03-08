@@ -11,25 +11,27 @@ from fastapi_users_db_sqlmodel import (
     SQLModelBaseUserDB,
 )
 from fastapi_users_db_sqlmodel.access_token import SQLModelBaseAccessToken
-from pydantic import UUID4
-from sqlmodel import AutoString, Column, ForeignKey, Relationship, SQLModel
+from pydantic import UUID4, ConfigDict
+from sqlalchemy import types
+from sqlmodel import AutoString, ForeignKey, Relationship, SQLModel
 
 if TYPE_CHECKING:
     from climbing.db.models.ascent import Ascent
     from climbing.db.models.route import Route
 
 
-class AccessToken(SQLModelBaseAccessToken, table=True):
-    """Table for storing access tokens"""
+class AccessRefreshToken(SQLModelBaseAccessToken, table=True):
+    """Table for storing access and refresh tokens"""
 
+    __tablename__ = "accessrefreshtoken"
+
+    refresh_token: str = Field(
+        sa_type=types.String(length=43), index=True, unique=True
+    )
     user_id: UUID4 = Field(
         ...,
-        sa_column=Column(
-            ForeignKey(
-                "user.id", ondelete="CASCADE", name="accesstoken_user_fk"
-            ),
-            nullable=False,
-        ),
+        sa_column_args=(ForeignKey("user.id", ondelete="CASCADE"),),
+        nullable=False,
     )
 
 
@@ -38,12 +40,8 @@ class OAuthAccount(SQLModelBaseOAuthAccount, table=True):
 
     user_id: UUID4 = Field(
         ...,
-        sa_column=Column(
-            ForeignKey(
-                "user.id", ondelete="CASCADE", name="oauthaccount_user_fk"
-            ),
-            nullable=False,
-        ),
+        sa_column_args=(ForeignKey("user.id", ondelete="CASCADE"),),
+        nullable=False,
     )
 
 
@@ -80,13 +78,17 @@ class Username(SQLModel):
     username: str = Field(
         min_length=2,
         max_length=100,
-        sa_column_kwargs={"unique": True, "index": True},
+        unique=True,
+        index=True,
     )
 
 
 class SexEnum(Enum):
     male = "male"
     female = "female"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 class IsStudent(SQLModel):
@@ -103,6 +105,8 @@ class Sex(SQLModel):
         sa_column_kwargs={"server_default": str(SexEnum.male.value)},
         sa_type=AutoString,
     )
+
+    model_config = ConfigDict(use_enum_values=True)
 
 
 class UserBase(FirstAndLastNames, Username, IsStudent, Sex):

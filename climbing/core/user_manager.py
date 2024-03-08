@@ -1,6 +1,6 @@
 import smtplib
 from email.mime.text import MIMEText
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import Depends, Request
@@ -75,9 +75,18 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
 
         hashed_password = self.password_helper.hash(user_create.password)
         user_dict = (
-            user_create.create_update_dict()
+            user_create.model_dump(
+                exclude_unset=True,
+                exclude={
+                    "id",
+                    "is_superuser",
+                    "is_active",
+                    "is_verified",
+                    "oauth_accounts",
+                },
+            )
             if safe
-            else user_create.create_update_dict_superuser()
+            else user_create.model_dump(exclude_unset=True, exclude={"id"})
         )
 
         user_dict["hashed_password"] = hashed_password
@@ -121,7 +130,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
             await self.validate_password(value, user)
             update_dict["hashed_password"] = self.password_helper.hash(value)
         else:
-            update_dict["field"] = value
+            update_dict[field] = value
 
     async def validate_password(
         self, password: str, user: UserCreate | User
@@ -162,3 +171,6 @@ def get_user_manager(
         UserManager: UserManager
     """
     return UserManager(user_db)
+
+
+UserManagerDep = Annotated[UserManager, Depends(get_user_manager)]
