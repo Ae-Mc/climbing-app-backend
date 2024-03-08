@@ -87,7 +87,7 @@ class RatingCalculator:
                 )
             if self.filter.sex is not None:
                 users_with_ascents_score = users_with_ascents_score.where(
-                    User.sex == self.filter.sex
+                    User.sex == self.filter.sex.value
                 )
 
         self.routes_competition_table: dict[float, list[User]] = {}
@@ -175,7 +175,7 @@ class RatingCalculator:
                         User.is_student == self.filter.is_student
                     )
                 if self.filter.sex is not None:
-                    query = query.where(User.sex == self.filter.sex)
+                    query = query.where(User.sex == self.filter.sex.value)
             return query
 
         competition_participants: list[CompetitionParticipant] = (
@@ -233,7 +233,7 @@ class RatingCalculator:
                         query = query.join(
                             User, onclause=Ascent.user_id == User.id
                         )
-                    query = query.where(User.sex == self.filter.sex)
+                    query = query.where(User.sex == self.filter.sex.value)
             return query.order_by(Ascent.date.desc())
 
         all_ascents: list[Ascent] = await crud_ascent.get_all(
