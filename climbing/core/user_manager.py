@@ -22,9 +22,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
     reset_password_token_secret = settings.SECRET
     verification_token_secret = settings.SECRET
 
-    async def authenticate(
-        self, credentials: OAuth2PasswordRequestForm
-    ) -> User | None:
+    async def authenticate(self, credentials: OAuth2PasswordRequestForm) -> User | None:
         user = await self.get_user_by_credentials(credentials)
         if user is None:
             # Run the hasher to mitigate timing attack
@@ -43,7 +41,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
         # Update password hash to a more robust one if needed
         if updated_password_hash is not None:
             user.hashed_password = updated_password_hash
-            await self.user_db.update(user)
+            await self.user_db.update(user, {"hashed_password": updated_password_hash})
 
         return user
 
@@ -132,9 +130,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
         else:
             update_dict[field] = value
 
-    async def validate_password(
-        self, password: str, user: UserCreate | User
-    ) -> None:
+    async def validate_password(self, password: str, user: UserCreate | User) -> None:
         if len(password) < 8:
             raise InvalidPasswordException(
                 "Пароль слишком короткий: минимум 8 символов"
@@ -144,9 +140,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
     async def on_after_forgot_password(
         self, user: User, token: str, request: Request | None = None
     ) -> None:
-        server = smtplib.SMTP_SSL(
-            settings.MAIL_SMTP_HOST, settings.MAIL_SMTP_PORT
-        )
+        server = smtplib.SMTP_SSL(settings.MAIL_SMTP_HOST, settings.MAIL_SMTP_PORT)
         server.login(settings.MAIL_USERNAME, settings.MAIL_PASSWORD)
         msg = MIMEText(
             f"""Для сброса пароля пройдите по ссылке: https://climbing.ae-mc.ru/#/password-reset/{token}
