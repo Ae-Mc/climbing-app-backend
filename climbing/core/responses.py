@@ -1,8 +1,8 @@
 from typing import Any
 
 from fastapi import HTTPException
-from fastapi_users_db_sqlmodel import Field
 from pydantic import BaseModel
+from sqlmodel import Field
 
 
 class ErrorModel(BaseModel):
@@ -16,7 +16,7 @@ class ResponseModel:
 
     code: int
     description: str = Field(title="Описание ошибки")
-    example: ErrorModel = ErrorModel
+    example: ErrorModel = ErrorModel(detail="Пример")
 
     def __init__(self, code: int, description: str, model: ErrorModel) -> None:
         self.code = code
@@ -29,9 +29,7 @@ class ResponseModel:
             self.code: {
                 "description": self.description,
                 "model": ErrorModel,
-                "content": {
-                    "application/json": {"example": self.example.dict()}
-                },
+                "content": {"application/json": {"example": self.example.dict()}},
             }
         }
 
@@ -63,7 +61,4 @@ INTEGRITY_ERROR = ResponseModel(
     400,
     "Integrity error occured",
     ErrorModel(detail="Integrity error occured"),
-)
-INVALID_TOKEN = ResponseModel(
-    401, "Invalid token", ErrorModel(detail="invalid_token")
 )

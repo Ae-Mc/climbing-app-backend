@@ -11,10 +11,10 @@ alembic = "^1.7.5"
 pydantic = "^2.6.1"
 pydantic-settings = "^2.2.0"
 fastapi = "^0.109.2"
-fastapi-users = {extras = ["oauth"], version = "^12.1.3"}
-fastapi-users-db-sqlmodel = { git = "https://github.com/Ae-Mc/fastapi-users-db-sqlmodel", branch="allow-inheritance" }
+fastapi-users = { git = "https://github.com/Ae-Mc/fastapi-users", branch="add-refresh-token", extras = ["oauth"] }
+fastapi-users-db-sqlmodel = { git = "https://github.com/Ae-Mc/fastapi-users-db-sqlmodel", branch="add-refresh-token" }
 python = "^3.10"
-python-multipart = "^0.0.7"
+python-multipart = "^0.0.9"
 SQLAlchemy = "^2.0.0"
 python-dateutil = "^2.8.2"
 sqlmodel = "^0.0.16"

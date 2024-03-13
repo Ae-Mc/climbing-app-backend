@@ -15,11 +15,11 @@ class Settings(BaseSettings):
     SQLALCHEMY_DATABASE_URI: str | None = None
     AUTH_TOKEN_ENDPOINT_URL: str = f"{API_V1_STR}/auth/login"
     MEDIA_ROOT: str = "media"
-    MAIL_USERNAME: str = os.getenv("MAIL_PASSWORD")
-    MAIL_SMTP_HOST: str = os.getenv("MAIL_SMTP_HOST")
-    MAIL_SMTP_PORT: int = int(os.getenv("MAIL_SMTP_PORT"))
-    MAIL_PASSWORD: str = os.getenv("MAIL_PASSWORD")
-    SECRET: str = os.getenv("SECRET")
+    MAIL_USERNAME: str = os.getenv("MAIL_PASSWORD")  # type: ignore
+    MAIL_SMTP_HOST: str = os.getenv("MAIL_SMTP_HOST")  # type: ignore
+    MAIL_SMTP_PORT: int = int(os.getenv("MAIL_SMTP_PORT"))  # type: ignore
+    MAIL_PASSWORD: str = os.getenv("MAIL_PASSWORD")  # type: ignore
+    SECRET: str = os.getenv("SECRET")  # type: ignore
 
     @validator("SQLALCHEMY_DATABASE_URI", pre=True)
     @classmethod

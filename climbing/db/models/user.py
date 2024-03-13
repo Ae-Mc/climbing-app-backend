@@ -5,29 +5,21 @@ from typing import TYPE_CHECKING, List
 from fastapi import Request
 from fastapi_users.schemas import BaseUserCreate, BaseUserUpdate
 from fastapi_users_db_sqlmodel import (
-    EmailStr,
-    Field,
     SQLModelBaseOAuthAccount,
     SQLModelBaseUserDB,
 )
-from fastapi_users_db_sqlmodel.access_token import SQLModelBaseAccessToken
-from pydantic import UUID4, ConfigDict
-from sqlalchemy import types
-from sqlmodel import AutoString, ForeignKey, Relationship, SQLModel
+from fastapi_users_db_sqlmodel.access_token import SQLModelBaseAccessRefreshToken
+from pydantic import UUID4, ConfigDict, EmailStr
+from sqlmodel import AutoString, Field, ForeignKey, Relationship, SQLModel
 
 if TYPE_CHECKING:
     from climbing.db.models.ascent import Ascent
     from climbing.db.models.route import Route
 
 
-class AccessRefreshToken(SQLModelBaseAccessToken, table=True):
+class AccessRefreshToken(SQLModelBaseAccessRefreshToken, table=True):
     """Table for storing access and refresh tokens"""
 
-    __tablename__ = "accessrefreshtoken"
-
-    refresh_token: str = Field(
-        sa_type=types.String(length=43), index=True, unique=True
-    )
     user_id: UUID4 = Field(
         ...,
         sa_column_args=(ForeignKey("user.id", ondelete="CASCADE"),),

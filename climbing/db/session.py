@@ -2,15 +2,15 @@ from sqlite3 import Connection as SQLite3Connection
 from typing import Annotated, AsyncGenerator
 
 from fastapi import Depends
+from fastapi_users_db_sqlmodel.access_token import (
+    SQLModelAccessRefreshTokenDatabaseAsync,
+)
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from climbing.core.config import settings
-from climbing.core.refresh_token.db.database import (
-    SQLModelAccessRefreshTokenDatabaseAsync,
-)
 from climbing.db.models.user import AccessRefreshToken, OAuthAccount, User
 from climbing.db.user_database import UserDatabase
 
@@ -19,20 +19,20 @@ from climbing.db.user_database import UserDatabase
 def set_sqlite_pragma(dbapi_connection, _):
     if (
         isinstance(dbapi_connection, SQLite3Connection)
-        or "sqlite" in settings.SQLALCHEMY_DATABASE_URI
+        or "sqlite" in settings.SQLALCHEMY_DATABASE_URI  # type: ignore
     ):
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON;")
         cursor.close()
 
 
-engine = create_async_engine(settings.SQLALCHEMY_DATABASE_URI)
-async_session_maker = sessionmaker(
-    bind=engine,
-    autocommit=False,
+engine = create_async_engine(settings.SQLALCHEMY_DATABASE_URI)  # type: ignore
+async_session_maker = sessionmaker[AsyncSession](  # type: ignore
+    bind=engine,  # type: ignore
+    class_=AsyncSession,
     autoflush=False,
     expire_on_commit=False,
-    class_=AsyncSession,
+    autocommit=False,
 )
 
 
