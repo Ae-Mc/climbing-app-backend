@@ -1,5 +1,5 @@
 from datetime import datetime
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from dateutil.relativedelta import relativedelta
 from fastapi import Request
@@ -104,6 +104,7 @@ class RatingCalculator:
         """Add competition based on ascents to scores dict"""
         place = 0
         previous_score = -1.0
+        ascent_competition = self.get_ascent_competition()
         for score, users in sorted(
             self.routes_competition_table.items(),
             key=lambda x: x[0],
@@ -112,9 +113,8 @@ class RatingCalculator:
             if score != previous_score:
                 place += 1
                 previous_score = score
-            rating_score = (
-                self.get_place_score(place, len(users)) if score > 0 else 0
-            )
+            rating_score = self.get_place_score(place, len(users)) if score > 0 else 0
+            rating_score *= ascent_competition.ratio
             for user in users:
                 if user.id in self._scores:
                     self._scores[user.id].ascents_score = score
@@ -131,7 +131,7 @@ class RatingCalculator:
                         id=uuid4(),
                         place=place,
                         user=UserRead.model_validate(user),
-                        competition=self.get_ascent_competition(),
+                        competition=ascent_competition,
                         score=rating_score,
                     )
                 )
@@ -270,12 +270,12 @@ class RatingCalculator:
     def get_ascent_competition(self) -> CompetitionRead:
         """Get fake competition based on ascents"""
 
-        competition_fake_id: UUID4 = "00000000-0000-4000-8000-000000000000"
+        competition_fake_id: UUID4 = UUID(hex="00000000-0000-4000-8000-000000000000")
         return CompetitionRead(
             id=competition_fake_id,
             name="5 лучших пролазов",
             date=self._end_date.date(),
-            ratio=1.0,
+            ratio=1.5,
         )
 
     @property
@@ -288,9 +288,7 @@ class RatingCalculator:
             place_people_count = 1
             for i, score in tuple(enumerate(sorted_scores))[1:]:
                 if sorted_scores[i - 1].score != score.score:
-                    score.place = (
-                        sorted_scores[i - 1].place + place_people_count
-                    )
+                    score.place = sorted_scores[i - 1].place + place_people_count
                     place_people_count = 1
                 else:
                     score.place = sorted_scores[i - 1].place
