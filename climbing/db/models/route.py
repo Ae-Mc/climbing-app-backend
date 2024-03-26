@@ -15,19 +15,15 @@ from .user import User
 class RouteBase(SQLModel):
     """Модель для хранения информации о трассе."""
 
-    name: str = Field(
-        ..., min_length=1, max_length=150, title="Название трассы"
-    )
-    category: Category = Field(
-        ..., title="Категория трассы", sa_type=AutoString
-    )
+    name: str = Field(..., min_length=1, max_length=150, title="Название трассы")
+    category: Category = Field(..., title="Категория трассы", sa_type=AutoString)
     mark_color: str = Field(
         ..., min_length=4, max_length=100, title="Цвет меток трассы"
     )
     description: str = Field(..., title="Описание трассы")
     creation_date: date = Field(..., title="Дата создания (постановки) трассы")
     archived: bool = Field(
-        False,
+        default=False,
         title="Устарела ли трасса (архивная ли она)",
         sa_column_kwargs={"server_default": "0"},
     )
@@ -41,9 +37,7 @@ class RouteBase(SQLModel):
 
 
 class RouteBaseDB(RouteBase):
-    author_id: UUID4 = Field(
-        ..., title="ID автора трассы", foreign_key="user.id"
-    )
+    author_id: UUID4 = Field(..., title="ID автора трассы", foreign_key="user.id")
 
 
 class RouteCreate(RouteBase):
@@ -51,8 +45,7 @@ class RouteCreate(RouteBase):
     использована напрямую как параметр запроса)."""
 
     images: list[UploadFile] = Field(...)
-    author: User = Field(..., title="Автор трассы")
-    author_id: UUID4 | None = Field(None)
+    author_id: UUID4 = Field(description="ID автора трассы")
 
     @validator("images", each_item=True)
     @classmethod
@@ -63,9 +56,9 @@ class RouteCreate(RouteBase):
             if image.filename is None:
                 is_image = False
             else:
-                is_image = image.filename.endswith(
-                    ".jpg"
-                ) or image.filename.endswith(".png")
+                is_image = image.filename.endswith(".jpg") or image.filename.endswith(
+                    ".png"
+                )
         else:
             is_image = image.content_type.split("/")[0] == "image"
 
@@ -82,9 +75,7 @@ class RouteUpdate(RouteCreate):
 class Route(RouteBaseDB, table=True):
     """Модель для хранения информации о трассе."""
 
-    id: UUID4 = Field(
-        title="ID трассы", primary_key=True, default_factory=uuid4
-    )
+    id: UUID4 = Field(title="ID трассы", primary_key=True, default_factory=uuid4)
     author: User = Relationship()
     images: List[RouteImage] = Relationship(back_populates="route")
     created_at: datetime = Field(

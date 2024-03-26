@@ -43,14 +43,12 @@ class CompetitionUpdate(CompetitionBase):
 class Competition(CompetitionBase, table=True):
     """Таблица для хранения соревнований"""
 
-    id: UUID4 = Field(
-        title="ID соревнования", primary_key=True, default_factory=uuid4
-    )
+    id: UUID4 = Field(title="ID соревнования", primary_key=True, default_factory=uuid4)
     organizer_id: UUID4 = Field(
         ..., title="ID организатора соревнования", foreign_key="user.id"
     )
     organizer: User = Relationship()
-    participants: List[CompetitionParticipant] = Relationship(
+    participants: list[CompetitionParticipant] = Relationship(
         back_populates="competition",
         # Instruct the ORM how to track changes to local objects
         sa_relationship_kwargs={"cascade": "all, delete-orphan"},

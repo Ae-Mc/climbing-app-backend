@@ -1,5 +1,3 @@
-from fastapi_users_db_sqlmodel import AsyncSession
-
 from climbing.crud.base import CRUDBase
 from climbing.db.models.competition_participant import (
     CompetitionParticipant,

@@ -16,6 +16,7 @@ from fastapi_users.exceptions import UserNotExists
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.selectable import Select
+from sqlmodel import col
 
 from climbing.core import responses
 from climbing.core.security import current_active_user
@@ -38,11 +39,11 @@ async def routes(
 ):
     "Получение списка всех трасс"
 
-    def query_modifier(query: Select[Route]) -> Select[Route]:
+    def query_modifier(query: Select[tuple[Route]]) -> Select[tuple[Route]]:
         if filter.archived is not None:
-            query = query.where(Route.archived == filter.archived)
+            query = query.where(col(Route.archived) == filter.archived)
         if filter.author_id is not None:
-            query = query.where(Route.author_id == filter.author_id)
+            query = query.where(col(Route.author_id) == filter.author_id)
         return query
 
     _routes = await crud_route.get_all(session, query_modifier)
@@ -117,10 +118,7 @@ async def update_route(
     — Swagger неправильно выставляет Content-Length"""
 
     old_db_route = await route(request, route_id, session)
-    if (
-        not current_user.is_superuser
-        and old_db_route.author_id != current_user.id
-    ):
+    if not current_user.is_superuser and old_db_route.author_id != current_user.id:
         raise responses.ACCESS_DENIED.exception()
     if new_author_id is None:
         author = old_db_route.author
@@ -132,7 +130,6 @@ async def update_route(
     try:
         db_route = RouteUpdate(
             **route_obj.model_dump(),
-            author=author,
             author_id=author.id,
             images=images,
         )
@@ -171,7 +168,7 @@ async def create_route(
             name=name,
             category=category,
             mark_color=mark_color,
-            author=user,
+            author_id=user.id,
             description=description,
             creation_date=creation_date,
             images=images,
@@ -204,8 +201,5 @@ async def archive_route(
     obj = await route(request, route_id, session)
     if obj.author_id != user.id and not user.is_superuser:
         raise responses.ACCESS_DENIED.exception()
-    obj.archived = True
-    updated_obj = await crud_route.update(
-        session, db_entity=obj, new_entity=obj
-    )
+    updated_obj = await crud_route.archive(session, row_id=obj.id)
     return updated_obj

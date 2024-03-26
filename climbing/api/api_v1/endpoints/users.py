@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Sequence
 
 from dateutil.relativedelta import relativedelta
 from fastapi import APIRouter, HTTPException, Path, Request, status
@@ -8,19 +9,14 @@ from pydantic import UUID4
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.sql import Select
+from sqlmodel import col
 
 from climbing.core import responses
-from climbing.core.security import (
-    current_superuser,
-    current_user,
-    fastapi_users,
-)
+from climbing.core.security import current_superuser, current_user, fastapi_users
 from climbing.core.user_manager import UserManager, get_user_manager
 from climbing.crud import ascent as crud_ascent
 from climbing.crud import competition as crud_competition
-from climbing.crud import (
-    competition_participant as crud_competition_participant,
-)
+from climbing.crud import competition_participant as crud_competition_participant
 from climbing.crud import route as crud_route
 from climbing.db.models import Route, User
 from climbing.db.models.ascent import Ascent, AscentUpdate
@@ -67,10 +63,10 @@ async def delete_me(
     user_manager: UserManager = Depends(get_user_manager),
 ):
     """Удаление текущего пользователя"""
-    user_routes: list[Route] = (
+    user_routes: Sequence[Route] = (
         (
             await async_session.execute(
-                select(Route).where(Route.author_id == user.id)
+                select(Route).where(col(Route.author_id) == user.id)
             )
         )
         .scalars()
@@ -123,14 +119,12 @@ async def read_user_ascents(
     response_model=list[CompetitionReadWithAll],
     responses=responses.UNAUTHORIZED.docs(),
 )
-async def read_user_ascents(
+async def read_user_competitions(
     async_session: AsyncSession = Depends(get_async_session),
     user: User = Depends(current_user),
 ):
     """Список организованных текущим пользователем соревнований"""
-    competitions = await crud_competition.get_for_organizer(
-        async_session, user.id
-    )
+    competitions = await crud_competition.get_for_organizer(async_session, user.id)
     return competitions
 
 
@@ -148,7 +142,9 @@ async def read_user_expiring_ascents(
     """Список подъёмов текущего пользователя, которые скоро исчезнут из
     рейтинга"""
     end_date = datetime.now()
-    end_date = end_date.date() + relativedelta(days=2)
+    end_date = end_date.replace(
+        hour=0, minute=0, second=0, microsecond=0
+    ) + relativedelta(days=2)
     start_date = end_date + relativedelta(months=-1, days=-15)
 
     ascents = await crud_ascent.get_for_user(
@@ -187,16 +183,16 @@ async def replace_with_new_user(
     user_manager: UserManager = Depends(get_user_manager),
 ):
     def participation_query_modifier(query: Select) -> Select:
-        return query.where(CompetitionParticipant.user_id == user_id)
+        return query.where(col(CompetitionParticipant.user_id) == user_id)
 
     def ascent_query_modifier(query: Select) -> Select:
-        return query.where(Ascent.user_id == user_id)
+        return query.where(col(Ascent.user_id) == user_id)
 
     def route_query_modifier(query: Select) -> Select:
-        return query.where(Route.author_id == user_id)
+        return query.where(col(Route.author_id) == user_id)
 
     def competition_query_modifier(query: Select) -> Select:
-        return query.where(Competition.organizer_id == user_id)
+        return query.where(col(Competition.organizer_id) == user_id)
 
     try:
         user = await user_manager.get(user_id)
@@ -214,9 +210,7 @@ async def replace_with_new_user(
         session=session, query_modifier=participation_query_modifier
     )
     for participation in participations:
-        new_participation = CompetitionParticipantUpdate.model_validate(
-            participation
-        )
+        new_participation = CompetitionParticipantUpdate.model_validate(participation)
         new_participation.user_id = replacement.id
         await crud_competition_participant.update(
             session=session,
@@ -239,9 +233,7 @@ async def replace_with_new_user(
     for route in routes:
         new_route = RouteUpdate.model_validate(route)
         new_route.author_id = replacement.id
-        await crud_route.update(
-            session=session, db_entity=route, new_entity=new_route
-        )
+        await crud_route.update(session=session, db_entity=route, new_entity=new_route)
     competitions = await crud_competition.get_all(
         session=session, query_modifier=competition_query_modifier
     )
@@ -255,4 +247,4 @@ async def replace_with_new_user(
     await user_manager.delete(user)
 
 
-router.include_router(fastapi_users.get_users_router(UserRead, UserUpdate))
+router.include_router(fastapi_users.get_users_router(UserRead, UserUpdate))  # type: ignore

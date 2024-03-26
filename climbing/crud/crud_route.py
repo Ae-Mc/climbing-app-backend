@@ -1,6 +1,7 @@
 from os import path
-from typing import Any
+from typing import Any, Sequence
 
+from fastapi import UploadFile
 from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -17,7 +18,7 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
 
     async def get_for_user(
         self, session: AsyncSession, user_id: UUID4
-    ) -> list[Route]:
+    ) -> Sequence[Route]:
         """Получение списка трасс для пользователя"""
 
         return (
@@ -41,9 +42,10 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
     ) -> Route:
         if isinstance(new_entity, RouteUpdate):
             update_data = new_entity.model_dump(exclude={"images": True})
-        elif isinstance(new_entity, dict[str, Any]):
+            images = new_entity.images
+        elif isinstance(new_entity, dict):
             update_data = new_entity
-            update_data.pop("images", None)
+            images: list[UploadFile] = update_data.pop("images", None)
         db_entity = await super().update(
             session, db_entity=db_entity, new_entity=update_data
         )
@@ -54,25 +56,27 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
                 storage.remove_relative(path.basename(image.url))
         db_entity.images.clear()
 
-        for image in new_entity.images:
-            db_entity.images.append(RouteImage(url=storage.save(image)))
+        for image in images:
+            db_entity.images.append(
+                RouteImage(url=storage.save(image), route_id=db_entity.id)
+            )
         session.add(db_entity)
         await session.commit()
-        return await self.get(session, db_entity.id)
+        result = await self.get(session, db_entity.id)
+        assert result is not None
+        return result
 
     async def create(self, session: AsyncSession, entity: RouteCreate) -> Route:
         storage = FileStorage(settings.MEDIA_ROOT)
         images: list[RouteImage] = []
-        entity_data = entity.model_dump(
-            exclude={"images": True, "author": True, "author_id": True}
-        )
-        route_instance = self.model(**entity_data, author_id=entity.author.id)
+        entity_data = entity.model_dump(exclude={"images": True, "author": True})
+        route_instance = self.model(**entity_data)
         session.add(route_instance)
         await session.commit()
         await session.refresh(route_instance, attribute_names={"id"})
         for image in entity.images:
             images.append(
-                RouteImage(url=storage.save(image), route=route_instance)
+                RouteImage(url=storage.save(image), route_id=route_instance.id)
             )
             session.add(images[-1])
         await session.commit()
@@ -102,6 +106,17 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
                 )
         await session.delete(route_instance)
         await session.commit()
+
+    async def archive(
+        self, session: AsyncSession, *, row_id: UUID4, archived: bool = True
+    ) -> Route | None:
+        route = await self.get(session, row_id)
+        if route is None:
+            return route
+        route.archived = True
+        session.add(route)
+        await session.commit()
+        return route
 
 
 route = CRUDRoute(Route)

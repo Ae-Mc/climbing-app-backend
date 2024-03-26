@@ -1,7 +1,6 @@
 from datetime import datetime
 
-from fastapi_users_db_sqlmodel import Field
-from pydantic import UUID4
+from pydantic import UUID4, Field
 
 from climbing.db.models import AscentBase, RouteBaseDB, UserBaseWithCreatedAt
 from climbing.db.models.competition import CompetitionBase

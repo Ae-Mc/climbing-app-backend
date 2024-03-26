@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Body, Depends, Path, Request
-from fastapi_users_db_sqlmodel import AsyncSession
 from pydantic import UUID4
-from sqlalchemy import asc, desc
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.selectable import Select
+from sqlmodel import col
 
 from climbing.core.responses import ID_NOT_FOUND, UNAUTHORIZED
 from climbing.core.security import current_active_user
@@ -28,20 +28,20 @@ async def ascents(
 ):
     """Получение списка всех подъёмов"""
 
-    def query_modifier(query: Select[Ascent]) -> Select[Ascent]:
+    def query_modifier(query: Select[tuple[Ascent]]) -> Select[tuple[Ascent]]:
         if filter.date_from is not None:
-            query = query.where(Ascent.date > filter.date_from)
+            query = query.where(col(Ascent.date) > filter.date_from)
         if filter.is_flash is not None:
-            query = query.where(Ascent.is_flash == filter.is_flash)
+            query = query.where(col(Ascent.is_flash) == filter.is_flash)
         if filter.route_id is not None:
-            query = query.where(Ascent.route_id == filter.route_id)
+            query = query.where(col(Ascent.route_id) == filter.route_id)
         if filter.user_id is not None:
-            query = query.where(Ascent.user_id == filter.user_id)
-        match (filter.sort_by_date):
+            query = query.where(col(Ascent.user_id) == filter.user_id)
+        match filter.sort_by_date:
             case Order.ASCENDING:
-                query = query.order_by(asc(Ascent.date))
+                query = query.order_by(col(Ascent.date).asc())
             case Order.DESCENDING:
-                query = query.order_by(desc(Ascent.date))
+                query = query.order_by(col(Ascent.date).desc())
             case None:
                 pass
         return query
@@ -52,9 +52,7 @@ async def ascents(
     return _ascents
 
 
-@router.get(
-    "/recent", response_model=list[AscentReadWithAll], name="ascents:recent"
-)
+@router.get("/recent", response_model=list[AscentReadWithAll], name="ascents:recent")
 async def recent_ascents(
     request: Request,
     session: AsyncSession = Depends(get_async_session),
@@ -140,5 +138,6 @@ async def ascent_remove(
     if _ascent.user_id != user.id and not user.is_superuser:
         raise UNAUTHORIZED.exception()
     _ascent = await crud_ascent.remove(session, row_id=ascent_id)
-    _ascent.set_absolute_image_urls(request)
+    if _ascent is not None:
+        _ascent.set_absolute_image_urls(request)
     return _ascent

@@ -1,10 +1,10 @@
-from typing import Any, Callable, Generic, Type, TypeVar
+from typing import Any, Callable, Generic, Sequence, Type, TypeVar
 from uuid import UUID
 
-from fastapi_users_db_sqlmodel import selectinload
 from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.selectable import Select
 from sqlmodel import SQLModel
 
@@ -23,9 +23,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def __init__(self, model: Type[ModelType]) -> None:
         self.model = model
 
-    async def get(
-        self, session: AsyncSession, row_id: UUID4
-    ) -> ModelType | None:
+    async def get(self, session: AsyncSession, row_id: UUID4) -> ModelType | None:
         """Get single row by id
 
         Args:
@@ -46,8 +44,8 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     async def get_all(
         self,
         session: AsyncSession,
-        query_modifier: Callable[[Select], Select] = None,
-    ) -> list[ModelType]:
+        query_modifier: Callable[[Select], Select] | None = None,
+    ) -> Sequence[ModelType]:
         """Get all rows
 
         Args:
@@ -56,7 +54,9 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         Returns:
             list[ModelType]: list of rows
         """
-        query = select(self.model).options(*self.select_options)
+        query: Select[tuple[ModelType]] = select(self.model).options(
+            *self.select_options
+        )
         if query_modifier is not None:
             query = query_modifier(query)
 
@@ -78,7 +78,9 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db_entity = self.model(**entity_data)  # type: ignore
         session.add(db_entity)
         await session.commit()
-        return await self.get(session, db_entity.id)
+        result = await self.get(session, db_entity.id)
+        assert result is not None
+        return result
 
     async def update(
         self,
@@ -111,11 +113,11 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             print(f"No ident: {ident}, (for entity of type {self.model})")
             return db_entity
         else:
-            return await self.get(session, ident)
+            result = await self.get(session, ident)
+            assert result is not None
+            return result
 
-    async def remove(
-        self, session: AsyncSession, *, row_id: UUID4
-    ) -> ModelType | None:
+    async def remove(self, session: AsyncSession, *, row_id: UUID4) -> ModelType | None:
         """Removes single row from database
 
         Args:
@@ -127,6 +129,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             ModelType: if row successfully removed
         """
         entity = await session.get(self.model, row_id)
-        await session.delete(entity)
-        await session.commit()
+        if entity is not None:
+            await session.delete(entity)
+            await session.commit()
         return entity

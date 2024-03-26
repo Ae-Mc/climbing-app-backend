@@ -1,8 +1,10 @@
 from datetime import datetime
+from typing import Sequence
 
-from fastapi_users_db_sqlmodel import AsyncSession
 from pydantic import UUID4
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlmodel import col
 
 from climbing.db.models import Ascent, AscentCreate, AscentUpdate
 
@@ -16,20 +18,20 @@ class CRUDAscent(CRUDBase[Ascent, AscentCreate, AscentUpdate]):
         self,
         session: AsyncSession,
         user_id: UUID4,
-        from_date: datetime = None,
-        to_date: datetime = None,
-    ) -> list[Ascent]:
+        from_date: datetime | None = None,
+        to_date: datetime | None = None,
+    ) -> Sequence[Ascent]:
         """Получение списка подъёмов для конкретного пользователя за
         определённый период. Если период на задан, то за всё время"""
         statement = (
             select(Ascent)
             .options(*self.select_options)
-            .where(Ascent.user_id == user_id)
+            .where(col(Ascent.user_id) == user_id)
         )
         if from_date is not None:
-            statement = statement.where(Ascent.date >= from_date)
+            statement = statement.where(col(Ascent.date) >= from_date)
         if to_date is not None:
-            statement = statement.where(Ascent.date <= to_date)
+            statement = statement.where(col(Ascent.date) <= to_date)
 
         return (await session.execute(statement)).scalars().all()
 

@@ -1,9 +1,9 @@
 from datetime import date
 
 from fastapi import APIRouter, Body, Depends, Path
-from fastapi_users_db_sqlmodel import AsyncSession
 from pydantic import UUID4
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 import climbing.core.responses as responses
 from climbing.core.security import current_active_user
@@ -11,14 +11,12 @@ from climbing.crud import competition as crud_competition
 from climbing.db.models.competition import CompetitionCreate
 from climbing.db.models.competition_participant import (
     CompetitionParticipantCreate,
+    CompetitionParticipantCreateWithCompetition,
 )
 from climbing.db.models.user import User
 from climbing.db.session import get_async_session
 from climbing.schemas.base_read_classes import CompetitionRead
 from climbing.schemas.competition import CompetitionReadWithAll
-from climbing.schemas.competition_participant import (
-    CompetitionParticipantCreateScheme,
-)
 
 router = APIRouter()
 
@@ -43,7 +41,7 @@ async def create_competition(
     name: str = Body(...),
     date: date = Body(...),  # pylint: disable=redefined-outer-name
     ratio: float = Body(...),
-    participants: list[CompetitionParticipantCreateScheme] = Body(...),
+    participants: list[CompetitionParticipantCreateWithCompetition] = Body(...),
     async_session: AsyncSession = Depends(get_async_session),
     user: User = Depends(current_active_user),
 ):
@@ -71,7 +69,7 @@ async def create_competition(
 )
 async def add_participant(
     competition_id: UUID4 = Path(...),
-    participant: CompetitionParticipantCreateScheme = Body(...),
+    participant: CompetitionParticipantCreateWithCompetition = Body(...),
     async_session: AsyncSession = Depends(get_async_session),
     user: User = Depends(current_active_user),
 ):
