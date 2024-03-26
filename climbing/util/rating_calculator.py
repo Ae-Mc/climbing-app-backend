@@ -57,8 +57,8 @@ class RatingCalculator:
                 .label("route_priority"),
             )
             .options(*crud_ascent.select_options)
-            .where(col(Ascent.date) >= col(self._start_date))
-            .where(col(Ascent.date) <= col(self._end_date))
+            .where(col(Ascent.date) >= self._start_date)
+            .where(col(Ascent.date) <= self._end_date)
             .join(Route)
             # .group_by(Ascent.user_id, Ascent.route_id)
             .order_by(desc("route_priority"))
@@ -177,9 +177,7 @@ class RatingCalculator:
                     query = query.where(col(User.sex) == self.filter.sex.value)
             return query
 
-        competition_participants: list[
-            CompetitionParticipant
-        ] = await crud_competition_participant.get_all(
+        competition_participants = await crud_competition_participant.get_all(
             session=self.session,
             query_modifier=competition_participants_query_modifier,
         )
@@ -236,7 +234,7 @@ class RatingCalculator:
                     query = query.where(col(User.sex) == self.filter.sex.value)
             return query.order_by(col(Ascent.date).desc())
 
-        all_ascents: list[Ascent] = await crud_ascent.get_all(
+        all_ascents = await crud_ascent.get_all(
             session=self.session, query_modifier=query_modifier
         )
         for ascent in all_ascents:
