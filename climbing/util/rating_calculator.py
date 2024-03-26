@@ -7,6 +7,7 @@ from pydantic import UUID4
 from sqlalchemy import case, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
+from sqlmodel import col
 
 from climbing.core.score_maps import category_to_score_map, place_to_score_map
 from climbing.crud import ascent as crud_ascent
@@ -50,14 +51,14 @@ class RatingCalculator:
                 self.categories_case.label("route_cost"),
                 func.row_number()
                 .over(
-                    partition_by=Ascent.user_id,
+                    partition_by=col(Ascent.user_id),
                     order_by=desc(self.categories_case),
                 )
                 .label("route_priority"),
             )
             .options(*crud_ascent.select_options)
-            .where(Ascent.date >= self._start_date)
-            .where(Ascent.date <= self._end_date)
+            .where(col(Ascent.date) >= col(self._start_date))
+            .where(col(Ascent.date) <= col(self._end_date))
             .join(Route)
             # .group_by(Ascent.user_id, Ascent.route_id)
             .order_by(desc("route_priority"))
@@ -76,18 +77,18 @@ class RatingCalculator:
                     subq.c.route_priority == None,  # noqa: E711
                 )
             )
-            .group_by(User.id)
+            .group_by(col(User.id))
             .order_by(desc("score"))
         )
 
         if self.filter:
             if self.filter.is_student is not None:
                 users_with_ascents_score = users_with_ascents_score.where(
-                    User.is_student == self.filter.is_student
+                    col(User.is_student) == self.filter.is_student
                 )
             if self.filter.sex is not None:
                 users_with_ascents_score = users_with_ascents_score.where(
-                    User.sex == self.filter.sex.value
+                    col(User.sex) == self.filter.sex.value
                 )
 
         self.routes_competition_table: dict[float, list[User]] = {}
@@ -153,9 +154,7 @@ class RatingCalculator:
                 CompetitionParticipantReadRating.model_validate(participant)
             )
             self._scores[participant.user_id].participations[-1].place = place
-            self._scores[participant.user_id].participations[
-                -1
-            ].score = rating_score
+            self._scores[participant.user_id].participations[-1].score = rating_score
             self._scores[participant.user_id].score += rating_score
 
     async def fill_other_competition_scores(self) -> None:
@@ -164,30 +163,31 @@ class RatingCalculator:
         def competition_participants_query_modifier(query: Select) -> Select:
             query = (
                 query.join(Competition)
-                .join(User, onclause=User.id == CompetitionParticipant.user_id)
-                .where(Competition.date >= self._start_date)
-                .where(Competition.date <= self._end_date)
-                .order_by(Competition.date, CompetitionParticipant.place)
+                .join(
+                    User, onclause=col(User.id) == col(CompetitionParticipant.user_id)
+                )
+                .where(col(Competition.date) >= self._start_date)
+                .where(col(Competition.date) <= self._end_date)
+                .order_by(col(Competition.date), col(CompetitionParticipant.place))
             )
             if self.filter is not None:
                 if self.filter.is_student is not None:
-                    query = query.where(
-                        User.is_student == self.filter.is_student
-                    )
+                    query = query.where(col(User.is_student) == self.filter.is_student)
                 if self.filter.sex is not None:
-                    query = query.where(User.sex == self.filter.sex.value)
+                    query = query.where(col(User.sex) == self.filter.sex.value)
             return query
 
-        competition_participants: list[CompetitionParticipant] = (
-            await crud_competition_participant.get_all(
-                session=self.session,
-                query_modifier=competition_participants_query_modifier,
-            )
+        competition_participants: list[
+            CompetitionParticipant
+        ] = await crud_competition_participant.get_all(
+            session=self.session,
+            query_modifier=competition_participants_query_modifier,
         )
 
-        competition_id: UUID4 = None
+        competition_id: UUID4 | None = None
         place_people: list[CompetitionParticipant] = []
         previous_place = 0
+        real_place = 1
         for participant in competition_participants:
             if participant.competition_id != competition_id:
                 if len(place_people) > 0:
@@ -225,16 +225,16 @@ class RatingCalculator:
                 if self.filter.is_student is not None:
                     user_joined = True
                     query = query.join(
-                        User, onclause=Ascent.user_id == User.id
-                    ).where(User.is_student == self.filter.is_student)
+                        User, onclause=col(Ascent.user_id) == col(User.id)
+                    ).where(col(User.is_student) == self.filter.is_student)
                 if self.filter.sex is not None:
                     if not user_joined:
                         user_joined = True
                         query = query.join(
-                            User, onclause=Ascent.user_id == User.id
+                            User, onclause=col(Ascent.user_id) == col(User.id)
                         )
-                    query = query.where(User.sex == self.filter.sex.value)
-            return query.order_by(Ascent.date.desc())
+                    query = query.where(col(User.sex) == self.filter.sex.value)
+            return query.order_by(col(Ascent.date).desc())
 
         all_ascents: list[Ascent] = await crud_ascent.get_all(
             session=self.session, query_modifier=query_modifier
@@ -257,7 +257,9 @@ class RatingCalculator:
         self, end_date: datetime, start_date: datetime | None = None
     ) -> None:
         """Sets date range for rating calculation"""
-        self._end_date = end_date.date() + relativedelta(
+        self._end_date = end_date.replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ) + relativedelta(
             hours=23,
             minutes=59,
             seconds=59,

@@ -14,16 +14,18 @@ class Score(BaseModel):
 
     user: UserRead = Field(..., title="Пользователь")
     place: int = Field(..., title="Место в рейтинге")
-    score: float = Field(0, title="Количество очков")
+    score: float = Field(default=0, title="Количество очков")
     ascents_score: float = Field(
-        0,
+        default=0,
         title="Количество очков за трассы",
         description="По этому параметру строится соревнование, за которое"
         " зачисляются очки рейтинга по стандартной схеме",
     )
     participations: List[CompetitionParticipantReadRating] = Field(
-        [], title="Участия в соревнованиях"
+        default_factory=lambda: list(), title="Участия в соревнованиях"
     )
-    ascents: List[AscentReadWithRoute] = Field([], title="Список пролазов")
+    ascents: List[AscentReadWithRoute] = Field(
+        default_factory=lambda: list(), title="Список пролазов"
+    )
 
     model_config = ConfigDict(from_attributes=True)

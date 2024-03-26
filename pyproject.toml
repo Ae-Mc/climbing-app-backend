@@ -11,8 +11,10 @@ alembic = "^1.7.5"
 pydantic = "^2.6.1"
 pydantic-settings = "^2.2.0"
 fastapi = "^0.109.2"
-fastapi-users = { git = "https://github.com/Ae-Mc/fastapi-users", branch="add-refresh-token", extras = ["oauth"] }
-fastapi-users-db-sqlmodel = { git = "https://github.com/Ae-Mc/fastapi-users-db-sqlmodel", branch="add-refresh-token" }
+fastapi-users = { git = "https://github.com/Ae-Mc/fastapi-users", branch = "add-refresh-token", extras = [
+    "oauth",
+] }
+fastapi-users-db-sqlmodel = { git = "https://github.com/Ae-Mc/fastapi-users-db-sqlmodel", branch = "add-refresh-token" }
 python = "^3.10"
 python-multipart = "^0.0.9"
 SQLAlchemy = "^2.0.0"
@@ -36,8 +38,8 @@ commitizen = "^2.20.4"
 pylint-pydantic = "^0.2.4"
 pylint-sqlalchemy = "^0.3.0"
 # Start of neovim dependencies
-pynvim = {version = "^0.4.3", optional = true}
-pyright = {version = "^0.0.13", optional = true}
+pynvim = { version = "^0.4.3", optional = true }
+pyright = { version = "^0.0.13", optional = true }
 # End of neovim dependencies
 
 [tool.commitizen]

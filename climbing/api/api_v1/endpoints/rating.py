@@ -6,6 +6,7 @@ from typing import List
 from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import col
 from xlsxwriter import Workbook
 
 from climbing.core.score_maps import category_to_score_map, place_to_score_map
@@ -27,7 +28,7 @@ async def prepare_rating(
     session: AsyncSession,
     start_date: datetime | None = None,
     end_date: datetime | None = None,
-    rating_filter: RatingFilter = None,
+    rating_filter: RatingFilter | None = None,
 ) -> RatingCalculator:
     if end_date is None:
         end_date = datetime.now()
@@ -103,8 +104,8 @@ async def rating_csv(
             await crud_competition.get_all(
                 session=session,
                 query_modifier=lambda query: query.where(
-                    Competition.date >= calc.start_date
-                ).where(Competition.date <= calc.end_date),
+                    col(Competition.date) >= calc.start_date
+                ).where(col(Competition.date) <= calc.end_date),
             ),
         )
     )
@@ -123,28 +124,24 @@ async def rating_csv(
     }
     rating_fullname = f"{rating_student_name[is_student]}{rating_sex_name[sex]}рейтинг на {calc.end_date.date()}"
     worksheet.merge_range(
-        0,
-        0,
-        0,
-        2 + len(competitions),
+        first_row=0,
+        first_col=0,
+        last_row=0,
+        last_col=2 + len(competitions),
         data=rating_fullname,
         cell_format=format,
     )
     worksheet.write(1, 2 + len(competitions), "Итого баллы")
 
     for i, competition in enumerate(competitions):
-        worksheet.write(
-            1, 2 + i, f"{competition.name} (коэфф {competition.ratio})"
-        )
+        worksheet.write(1, 2 + i, f"{competition.name} (коэфф {competition.ratio})")
     for i, score in enumerate(scores):
         participations = {
             participation.competition.id: participation
             for participation in score.participations
         }
         worksheet.write(2 + i, 0, score.place)
-        worksheet.write(
-            2 + i, 1, f"{score.user.last_name} {score.user.first_name}"
-        )
+        worksheet.write(2 + i, 1, f"{score.user.last_name} {score.user.first_name}")
         for j, competition in enumerate(competitions):
             if competition.id in participations:
                 score_value = participations[competition.id].score
