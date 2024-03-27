@@ -6,6 +6,7 @@ from fastapi import Request
 from pydantic import UUID4
 from sqlalchemy import case, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 from sqlalchemy.sql import Select
 from sqlmodel import col
 
@@ -36,12 +37,15 @@ class RatingCalculator:
     _start_date: datetime
     _end_date: datetime
     routes_competition_table: dict[float, list[User]]
-    filter: RatingFilter | None = None
+    _filter_params: RatingFilter | None = None
     _scores: dict[UUID4, Score]
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(
+        self, session: AsyncSession, filter_params: RatingFilter | None = None
+    ) -> None:
         self.session = session
         self.set_date_range(datetime.now())
+        self._filter_params = filter_params
         self._scores = {}
 
     async def calc_routes_competition(self) -> None:
@@ -81,15 +85,7 @@ class RatingCalculator:
             .order_by(desc("score"))
         )
 
-        if self.filter:
-            if self.filter.is_student is not None:
-                users_with_ascents_score = users_with_ascents_score.where(
-                    col(User.is_student) == self.filter.is_student
-                )
-            if self.filter.sex is not None:
-                users_with_ascents_score = users_with_ascents_score.where(
-                    col(User.sex) == self.filter.sex.value
-                )
+        users_with_ascents_score = self._filtered_query(users_with_ascents_score)
 
         self.routes_competition_table: dict[float, list[User]] = {}
         user: User
@@ -105,7 +101,7 @@ class RatingCalculator:
         """Add competition based on ascents to scores dict"""
         place = 0
         previous_score = -1.0
-        ascent_competition = self.get_ascent_competition()
+        ascent_competition = self._get_ascent_competition()
         for score, users in sorted(
             self.routes_competition_table.items(),
             key=lambda x: x[0],
@@ -170,12 +166,7 @@ class RatingCalculator:
                 .where(col(Competition.date) <= self._end_date)
                 .order_by(col(Competition.date), col(CompetitionParticipant.place))
             )
-            if self.filter is not None:
-                if self.filter.is_student is not None:
-                    query = query.where(col(User.is_student) == self.filter.is_student)
-                if self.filter.sex is not None:
-                    query = query.where(col(User.sex) == self.filter.sex.value)
-            return query
+            return self._filtered_query(query)
 
         competition_participants = await crud_competition_participant.get_all(
             session=self.session,
@@ -217,26 +208,19 @@ class RatingCalculator:
             )
 
     async def fill_ascents(self, request: Request) -> None:
-        def query_modifier(query: Select) -> Select:
-            if self.filter is not None:
-                user_joined = False
-                if self.filter.is_student is not None:
-                    user_joined = True
-                    query = query.join(
-                        User, onclause=col(Ascent.user_id) == col(User.id)
-                    ).where(col(User.is_student) == self.filter.is_student)
-                if self.filter.sex is not None:
-                    if not user_joined:
-                        user_joined = True
-                        query = query.join(
-                            User, onclause=col(Ascent.user_id) == col(User.id)
-                        )
-                    query = query.where(col(User.sex) == self.filter.sex.value)
-            return query.order_by(col(Ascent.date).desc())
-
-        all_ascents = await crud_ascent.get_all(
-            session=self.session, query_modifier=query_modifier
+        inner_query = select(Ascent, func.max(col(Ascent.date))).group_by(
+            col(Ascent.user_id), col(Ascent.route_id)
         )
+        if self._filter_params is not None:
+            inner_query = inner_query.join(
+                User, onclause=col(Ascent.user_id) == col(User.id)
+            )
+            inner_query = self._filtered_query(inner_query)
+        inner_stmt = inner_query.subquery()
+        aliased_ascend = aliased(Ascent, inner_stmt)
+        query = select(aliased_ascend).options(*crud_ascent.select_options)
+
+        all_ascents = (await self.session.execute(query)).scalars().all()
         for ascent in all_ascents:
             ascent.route.set_absolute_image_urls(request)
             ascent_read = AscentReadWithRoute.model_validate(ascent)
@@ -267,7 +251,7 @@ class RatingCalculator:
             self._end_date + relativedelta(months=-1, days=-15)
         )
 
-    def get_ascent_competition(self) -> CompetitionRead:
+    def _get_ascent_competition(self) -> CompetitionRead:
         """Get fake competition based on ascents"""
 
         competition_fake_id: UUID4 = UUID(hex="00000000-0000-4000-8000-000000000000")
@@ -277,6 +261,16 @@ class RatingCalculator:
             date=self._end_date.date(),
             ratio=1.5,
         )
+
+    def _filtered_query(self, query: Select) -> Select:
+        if self._filter_params:
+            if self._filter_params.is_student is not None:
+                query = query.where(
+                    col(User.is_student) == self._filter_params.is_student
+                )
+            if self._filter_params.sex is not None:
+                query = query.where(col(User.sex) == self._filter_params.sex.value)
+        return query
 
     @property
     def scores(self) -> list[Score]:

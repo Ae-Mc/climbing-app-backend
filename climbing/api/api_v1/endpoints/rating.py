@@ -33,9 +33,8 @@ async def prepare_rating(
     if end_date is None:
         end_date = datetime.now()
 
-    calc = RatingCalculator(session=session)
+    calc = RatingCalculator(session=session, filter_params=rating_filter)
     calc.set_date_range(end_date=end_date, start_date=start_date)
-    calc.filter = rating_filter
     await calc.fill_ascents(request=request)
     await calc.calc_routes_competition()
     await calc.fill_other_competition_scores()
@@ -109,7 +108,7 @@ async def rating_csv(
             ),
         )
     )
-    competitions.insert(0, calc.get_ascent_competition())
+    competitions.insert(0, calc._get_ascent_competition())
     format = workbook.add_format()
     format.set_align("center")
     rating_student_name = {
