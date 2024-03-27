@@ -44,7 +44,8 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     async def get_all(
         self,
         session: AsyncSession,
-        query_modifier: Callable[[Select], Select] | None = None,
+        query_modifier: Callable[[Select[tuple[ModelType]]], Select[tuple[ModelType]]]
+        | None = None,
     ) -> Sequence[ModelType]:
         """Get all rows
 
