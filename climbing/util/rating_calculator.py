@@ -74,13 +74,7 @@ class RatingCalculator:
                 func.coalesce(func.sum(subq.c.route_cost), 0).label("score"),
             )
             .outerjoin_from(User, subq, subq.c.user_id == User.id)
-            .where(
-                or_(
-                    subq.c.route_priority < 6,
-                    # pylint: disable=singleton-comparison
-                    subq.c.route_priority == None,  # noqa: E711
-                )
-            )
+            .where(or_(subq.c.route_priority < 6, subq.c.route_priority is None))  # type: ignore
             .group_by(col(User.id))
             .order_by(desc("score"))
         )
@@ -208,17 +202,26 @@ class RatingCalculator:
             )
 
     async def fill_ascents(self, request: Request) -> None:
-        inner_query = select(Ascent, func.max(col(Ascent.date))).group_by(
-            col(Ascent.user_id), col(Ascent.route_id)
+        inner_query = select(
+            Ascent,
+            func.row_number()
+            .over(
+                partition_by=[col(Ascent.user_id), col(Ascent.route_id)],
+                order_by=col(Ascent.date).desc(),
+            )
+            .label("ascent_rank"),
         )
         if self._filter_params is not None:
             inner_query = inner_query.join(
                 User, onclause=col(Ascent.user_id) == col(User.id)
             )
             inner_query = self._filtered_query(inner_query)
-        inner_stmt = inner_query.subquery()
-        aliased_ascend = aliased(Ascent, inner_stmt)
-        query = select(aliased_ascend).options(*crud_ascent.select_options)
+        inner_subq = inner_query.subquery()
+        query = (
+            select(aliased(Ascent, inner_subq))
+            .where(inner_subq.c.ascent_rank == 1)
+            .options(*crud_ascent.select_options)
+        )
 
         all_ascents = (await self.session.execute(query)).scalars().all()
         for ascent in all_ascents:
