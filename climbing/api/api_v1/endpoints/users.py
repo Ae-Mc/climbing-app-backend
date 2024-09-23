@@ -156,7 +156,7 @@ async def read_user_expiring_ascents(
         list(
             map(
                 lambda ascent: ExpiringAscent(
-                    time_to_expire=ascent.date.date() - start_date,
+                    time_to_expire=ascent.date - start_date,
                     ascent=ascent,
                 ),
                 ascents,
