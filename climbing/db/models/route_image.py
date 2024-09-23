@@ -6,6 +6,8 @@ from fastapi import Request
 from pydantic import UUID4
 from sqlmodel import Field, Relationship, SQLModel
 
+from climbing.core.config import settings
+
 if TYPE_CHECKING:
     from .route import Route
 
@@ -21,8 +23,7 @@ class BaseRouteImage(SQLModel):
         if "://" in self.url:
             return
         url_obj = request.url
-        port = "" if url_obj.port is None else ":" + str(url_obj.port)
-        self.url = f"{url_obj.scheme}://{url_obj.hostname}{port}/{self.url}"
+        self.url = f"{url_obj.scheme}://{settings.MINIO_HOST}/{settings.MINIO_BUCKET_NAME}/{self.url}"
 
 
 class RouteImage(BaseRouteImage, table=True):
@@ -32,6 +33,4 @@ class RouteImage(BaseRouteImage, table=True):
     url: str = Field(max_length=300)
     route_id: UUID4 = Field(foreign_key="route.id")
     route: "Route" = Relationship(back_populates="images")
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

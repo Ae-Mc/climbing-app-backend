@@ -1,4 +1,3 @@
-from os import path
 from typing import Any, Sequence
 
 from fastapi import UploadFile
@@ -7,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from climbing.api.deps import FileStorage
-from climbing.core.config import settings
 from climbing.db.models import Route, RouteCreate, RouteImage, RouteUpdate
 
 from .base import CRUDBase
@@ -49,11 +47,11 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
         db_entity = await super().update(
             session, db_entity=db_entity, new_entity=update_data
         )
-        storage = FileStorage(settings.MEDIA_ROOT)
+        storage = FileStorage()
         for image in db_entity.images:
             await session.delete(image)
-            if storage.exists_relative(path.basename(image.url)):
-                storage.remove_relative(path.basename(image.url))
+            if storage.exists_relative(image.url):
+                storage.remove_relative(image.url)
         db_entity.images.clear()
 
         for image in images:
@@ -67,7 +65,7 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
         return result
 
     async def create(self, session: AsyncSession, entity: RouteCreate) -> Route:
-        storage = FileStorage(settings.MEDIA_ROOT)
+        storage = FileStorage()
         images: list[RouteImage] = []
         entity_data = entity.model_dump(exclude={"images": True, "author": True})
         route_instance = self.model(**entity_data)
@@ -76,7 +74,10 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
         await session.refresh(route_instance, attribute_names={"id"})
         for image in entity.images:
             images.append(
-                RouteImage(url=storage.save(image), route_id=route_instance.id)
+                RouteImage(
+                    url=storage.save(image, prefix="routes_images/"),
+                    route_id=route_instance.id,
+                )
             )
             session.add(images[-1])
         await session.commit()
@@ -94,7 +95,7 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
         images = route_instance.images
         for image in images:
             await session.delete(image)
-        storage = FileStorage(settings.MEDIA_ROOT)
+        storage = FileStorage()
         for image in images:
             try:
                 storage.remove(image.url)

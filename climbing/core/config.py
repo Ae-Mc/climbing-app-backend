@@ -1,4 +1,3 @@
-import os
 from datetime import timedelta
 
 from pydantic import validator
@@ -11,15 +10,18 @@ class Settings(BaseSettings):
 
     ACCESS_TOKEN_EXPIRE_TIME: timedelta = timedelta(days=180)
     REFRESH_TOKEN_EXPIRE_TIME: timedelta = timedelta(days=180)
-    API_V1_STR: str = "/api/v1"
     SQLALCHEMY_DATABASE_URI: str | None = None
-    AUTH_TOKEN_ENDPOINT_URL: str = f"{API_V1_STR}/auth/login"
+    AUTH_TOKEN_ENDPOINT_URL: str = "/api/v2/auth/login"
     MEDIA_ROOT: str = "media"
-    MAIL_USERNAME: str = os.getenv("MAIL_PASSWORD")  # type: ignore
-    MAIL_SMTP_HOST: str = os.getenv("MAIL_SMTP_HOST")  # type: ignore
-    MAIL_SMTP_PORT: int = int(os.getenv("MAIL_SMTP_PORT"))  # type: ignore
-    MAIL_EXTERNAL_APP_PASSWORD: str = os.getenv("MAIL_EXTERNAL_APP_PASSWORD")  # type: ignore
-    SECRET: str = os.getenv("SECRET")  # type: ignore
+    MAIL_USERNAME: str
+    MAIL_SMTP_HOST: str
+    MAIL_SMTP_PORT: int
+    MAIL_EXTERNAL_APP_PASSWORD: str
+    MINIO_ACCESS_KEY: str
+    MINIO_SECRET_KEY: str
+    MINIO_HOST: str = "files.ae-mc.ru"
+    MINIO_BUCKET_NAME: str = "climbing"
+    SECRET: str
 
     @validator("SQLALCHEMY_DATABASE_URI", pre=True)
     @classmethod
@@ -37,4 +39,4 @@ class Settings(BaseSettings):
         return "sqlite+aiosqlite:///climbing.db"
 
 
-settings = Settings()
+settings = Settings()  # type: ignore

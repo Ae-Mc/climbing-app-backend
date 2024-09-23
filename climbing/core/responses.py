@@ -18,9 +18,13 @@ class ResponseModel:
     description: str = Field(title="Описание ошибки")
     example: ErrorModel = ErrorModel(detail="Пример")
 
-    def __init__(self, code: int, description: str, model: ErrorModel) -> None:
+    def __init__(
+        self, code: int, description: str, model: ErrorModel | None = None
+    ) -> None:
         self.code = code
         self.description = description
+        if model is None:
+            model = ErrorModel(detail=description)
         self.example = model
 
     def docs(self) -> dict[int | str, dict[str, Any]]:
@@ -29,7 +33,7 @@ class ResponseModel:
             self.code: {
                 "description": self.description,
                 "model": ErrorModel,
-                "content": {"application/json": {"example": self.example.dict()}},
+                "content": {"application/json": {"example": self.example.model_dump()}},
             }
         }
 
@@ -61,4 +65,7 @@ INTEGRITY_ERROR = ResponseModel(
     400,
     "Integrity error occured",
     ErrorModel(detail="Integrity error occured"),
+)
+INCOMPLETE_FILE_SENT = ResponseModel(
+    400, "Either Content-Type or Content-Length headers not set"
 )
