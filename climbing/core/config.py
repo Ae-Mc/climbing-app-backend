@@ -9,7 +9,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     """Class for storing app settings"""
 
-    ACCESS_TOKEN_EXPIRE_TIME: timedelta = timedelta(hours=1)
+    ACCESS_TOKEN_EXPIRE_TIME: timedelta = timedelta(days=180)
     REFRESH_TOKEN_EXPIRE_TIME: timedelta = timedelta(days=180)
     API_V1_STR: str = "/api/v1"
     SQLALCHEMY_DATABASE_URI: str | None = None
@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     MAIL_USERNAME: str = os.getenv("MAIL_PASSWORD")  # type: ignore
     MAIL_SMTP_HOST: str = os.getenv("MAIL_SMTP_HOST")  # type: ignore
     MAIL_SMTP_PORT: int = int(os.getenv("MAIL_SMTP_PORT"))  # type: ignore
-    MAIL_PASSWORD: str = os.getenv("MAIL_PASSWORD")  # type: ignore
+    MAIL_EXTERNAL_APP_PASSWORD: str = os.getenv("MAIL_EXTERNAL_APP_PASSWORD")  # type: ignore
     SECRET: str = os.getenv("SECRET")  # type: ignore
 
     @validator("SQLALCHEMY_DATABASE_URI", pre=True)

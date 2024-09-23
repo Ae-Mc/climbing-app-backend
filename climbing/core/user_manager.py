@@ -141,7 +141,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
         self, user: User, token: str, request: Request | None = None
     ) -> None:
         server = smtplib.SMTP_SSL(settings.MAIL_SMTP_HOST, settings.MAIL_SMTP_PORT)
-        server.login(settings.MAIL_USERNAME, settings.MAIL_PASSWORD)
+        server.login(settings.MAIL_USERNAME, settings.MAIL_EXTERNAL_APP_PASSWORD)
         msg = MIMEText(
             f"""Для сброса пароля пройдите по ссылке: https://climbing.ae-mc.ru/#/password-reset/{token}
 Или введите токен сброса пароля вручную:
