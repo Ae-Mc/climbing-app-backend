@@ -8,9 +8,7 @@ from climbing.api.api_v1.api import api_router
 from climbing.core.config import settings
 
 app = FastAPI(
-    contact={
-        "Автор": "Александр Макурин ae_mc@mail.ru|alexandr.mc12@gmail.com"
-    },
+    contact={"Автор": "Александр Макурин ae_mc@mail.ru|alexandr.mc12@gmail.com"},
 )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
@@ -23,7 +21,7 @@ app.mount("/media", static, name="media")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
