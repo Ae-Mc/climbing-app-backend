@@ -114,7 +114,7 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
         route = await self.get(session, row_id)
         if route is None:
             return route
-        route.archived = True
+        route.archived = archived
         session.add(route)
         await session.commit()
         return route
