@@ -23,6 +23,8 @@ sqlmodel = "^0.0.16"
 pyyaml = "^6.0.1"
 setuptools = "^68.1.0"
 xlsxwriter = "^3.1.9"
+minio = "^7.2.8"
+fastapi-versionizer = "^4.0.1"
 
 [tool.poetry.extras]
 neovim = ["pynvim", "pyright"]
