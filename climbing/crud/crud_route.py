@@ -50,13 +50,16 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
         storage = FileStorage()
         for image in db_entity.images:
             await session.delete(image)
-            if storage.exists_relative(image.url):
-                storage.remove_relative(image.url)
+            if storage.exists(image.url):
+                storage.remove(image.url)
         db_entity.images.clear()
 
         for image in images:
             db_entity.images.append(
-                RouteImage(url=storage.save(image), route_id=db_entity.id)
+                RouteImage(
+                    url=storage.save(image, prefix="routes_images/"),
+                    route_id=db_entity.id,
+                )
             )
         session.add(db_entity)
         await session.commit()

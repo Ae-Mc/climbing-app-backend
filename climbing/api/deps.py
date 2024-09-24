@@ -9,11 +9,7 @@ from climbing.core.config import settings
 
 
 class FileStorage:  # pylint: disable=too-few-public-methods
-    """Class for managing file storage
-
-    Attributes:
-        root (str): path to root folder of file storage
-    """
+    """Class for managing file storage"""
 
     client: Minio
 
@@ -55,18 +51,12 @@ class FileStorage:  # pylint: disable=too-few-public-methods
     def remove(self, filename: str) -> None:
         self.client.remove_object(settings.MINIO_BUCKET_NAME, filename)
 
-    def remove_relative(self, filename: str) -> None:
-        self.remove(filename)
-
     def exists(self, filename: str) -> bool:
         try:
             self.client.stat_object(settings.MINIO_BUCKET_NAME, filename)
             return True
         except S3Error:
             return False
-
-    def exists_relative(self, filename) -> bool:
-        return self.exists(filename)
 
     def clear_unlinked(self, prefix: str, white_list: list[str]) -> None:
         for obj in self.client.list_objects(

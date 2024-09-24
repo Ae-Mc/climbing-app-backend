@@ -223,7 +223,6 @@ async def replace_with_new_user(
     for ascent in ascents:
         new_ascent = AscentUpdate.model_validate(ascent)
         new_ascent.user_id = replacement.id
-        print(type(new_ascent.date))
         await crud_ascent.update(
             session=session, db_entity=ascent, new_entity=new_ascent
         )

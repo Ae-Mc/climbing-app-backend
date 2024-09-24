@@ -117,7 +117,9 @@ async def update_route(
     """Изменение трассы. Попытка вызвать этот метод в Swagger приводит к ошибке
     — Swagger неправильно выставляет Content-Length"""
 
-    old_db_route = await route(request, route_id, session)
+    old_db_route = await crud_route.get(session, route_id)
+    if old_db_route is None:
+        raise responses.ID_NOT_FOUND.exception()
     if not current_user.is_superuser and old_db_route.author_id != current_user.id:
         raise responses.ACCESS_DENIED.exception()
     if new_author_id is None:
@@ -139,6 +141,7 @@ async def update_route(
         updated_route.set_absolute_image_urls(request)
         return RouteReadWithAll.model_validate(updated_route)
     except ValidationError as err:
+        print(err)
         raise RequestValidationError(
             err.errors(include_input=False, include_url=False)
         ) from err
