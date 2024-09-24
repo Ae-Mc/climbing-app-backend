@@ -1,3 +1,4 @@
+from mimetypes import guess_extension
 from uuid import uuid4
 
 from fastapi import Header, HTTPException, UploadFile, status
@@ -21,8 +22,6 @@ class FileStorage:  # pylint: disable=too-few-public-methods
             endpoint=settings.MINIO_HOST,
             access_key=settings.MINIO_ACCESS_KEY,
             secret_key=settings.MINIO_SECRET_KEY,
-            secure=False,
-            cert_check=False,
         )
         if not self.client.bucket_exists(settings.MINIO_BUCKET_NAME):
             self.client.make_bucket(settings.MINIO_BUCKET_NAME)
@@ -41,6 +40,9 @@ class FileStorage:  # pylint: disable=too-few-public-methods
             raise responses.INCOMPLETE_FILE_SENT.exception()
         uuid = uuid4()
         filename = f"{prefix}{uuid.hex}"
+        extension = guess_extension(file.content_type.split(";")[0].strip())
+        if extension is not None:
+            filename += extension
         self.client.put_object(
             bucket_name=settings.MINIO_BUCKET_NAME,
             content_type=file.content_type,
