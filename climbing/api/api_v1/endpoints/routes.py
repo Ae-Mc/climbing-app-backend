@@ -113,7 +113,7 @@ async def update_route(
     current_user: User = Depends(current_active_user),
     user_manager: UserManager = Depends(get_user_manager),
     session: AsyncSession = Depends(get_async_session),
-):
+) -> RouteReadWithAll:
     """Изменение трассы. Попытка вызвать этот метод в Swagger приводит к ошибке
     — Swagger неправильно выставляет Content-Length"""
 
@@ -137,7 +137,7 @@ async def update_route(
             session, db_entity=old_db_route, new_entity=db_route
         )
         updated_route.set_absolute_image_urls(request)
-        return updated_route
+        return RouteReadWithAll.model_validate(updated_route)
     except ValidationError as err:
         raise RequestValidationError(
             err.errors(include_input=False, include_url=False)
