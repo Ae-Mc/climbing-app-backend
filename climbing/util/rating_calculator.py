@@ -4,27 +4,23 @@ from uuid import UUID, uuid4
 from dateutil.relativedelta import relativedelta
 from fastapi import Request
 from pydantic import UUID4
-from sqlalchemy import case, desc, func, or_, select
+from sqlalchemy import and_, case, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import aliased, selectinload
 from sqlalchemy.sql import Select
 from sqlmodel import col
 
 from climbing.core.score_maps import category_to_score_map, place_to_score_map
 from climbing.crud import ascent as crud_ascent
-from climbing.crud import (
-    competition_participant as crud_competition_participant,
-)
+from climbing.crud import competition_participant as crud_competition_participant
 from climbing.db.models.ascent import Ascent
 from climbing.db.models.competition import Competition
 from climbing.db.models.competition_participant import CompetitionParticipant
 from climbing.db.models.route import Route
 from climbing.db.models.user import User
-from climbing.schemas.ascent import AscentReadWithRoute
+from climbing.schemas.ascent import AscentReadRatingWithRoute, AscentReadWithRoute
 from climbing.schemas.base_read_classes import CompetitionRead, UserRead
-from climbing.schemas.competition_participant import (
-    CompetitionParticipantReadRating,
-)
+from climbing.schemas.competition_participant import CompetitionParticipantReadRating
 from climbing.schemas.filters.rating_filter import RatingFilter
 from climbing.schemas.score import Score
 
@@ -36,9 +32,11 @@ class RatingCalculator:
     categories_case = case(category_to_score_map, value=Route.category)
     _start_date: datetime
     _end_date: datetime
-    routes_competition_table: dict[float, list[User]]
+    routes_competition_table: dict[int, list[User]]
+    user_routes_ascent_table: dict[UUID4, list[AscentReadWithRoute]]
     _filter_params: RatingFilter | None = None
     _scores: dict[UUID4, Score]
+    COUNT_OF_ROUTES_TAKEN_IN_ACCOUNT = 5
 
     def __init__(
         self, session: AsyncSession, filter_params: RatingFilter | None = None
@@ -48,7 +46,48 @@ class RatingCalculator:
         self._filter_params = filter_params
         self._scores = {}
 
-    async def calc_routes_competition(self) -> None:
+    async def get_user_rating_ascents(
+        self, user_id: UUID4, request: Request
+    ) -> list[AscentReadRatingWithRoute]:
+        """Returns list of user's ascents with flag if it is in allowed date range"""
+        stmt = (
+            select(
+                Ascent,
+                and_(
+                    col(Ascent.date) >= self._start_date,
+                    col(Ascent.date) <= self._end_date,
+                ).label("taken_in_account"),
+            )
+            .join(Route)
+            .where(col(Ascent.user_id) == user_id)
+            .order_by(
+                desc("taken_in_account"), desc(self.categories_case.label("route_cost"))
+            )
+            .options(selectinload(Ascent.route).selectinload("*"))
+        )
+
+        executed = await self.session.execute(stmt)
+        raw_result = executed.all()
+        result: list[AscentReadRatingWithRoute] = []
+        taken_in_account_count = 0
+        for row in raw_result:
+            row.t[0].set_absolute_image_urls(request=request)
+            result.append(
+                AscentReadRatingWithRoute.model_validate(
+                    row.t[0], update={"taken_in_account": row.t[1]}
+                )
+            )
+            taken_in_account_count += int(result[-1].taken_in_account)
+        date_sort_start_offset = min(
+            taken_in_account_count, self.COUNT_OF_ROUTES_TAKEN_IN_ACCOUNT
+        )
+        return result[:date_sort_start_offset] + sorted(
+            result[date_sort_start_offset:],
+            key=lambda ascent: ascent.date,
+            reverse=True,
+        )
+
+    async def calc_routes_competition(self, request: Request) -> None:
         ascents_with_score = (
             select(
                 Ascent,
@@ -61,32 +100,49 @@ class RatingCalculator:
                 .label("route_priority"),
             )
             .options(*crud_ascent.select_options)
+            .options(selectinload(Ascent.route))
             .where(col(Ascent.date) >= self._start_date)
             .where(col(Ascent.date) <= self._end_date)
             .join(Route)
             .group_by(col(Ascent.user_id), col(Ascent.route_id))
             .order_by(desc("route_priority"))
         )
-        subq = ascents_with_score.subquery()
+        subq = ascents_with_score.subquery().alias("ascents_subq")
+        aliased_subq = aliased(Ascent, subq, name="ascents_subq")
         users_with_ascents_score = (
             select(
                 User,
                 func.coalesce(func.sum(subq.c.route_cost), 0).label("score"),
+                aliased_subq,
             )
-            .outerjoin_from(User, subq, subq.c.user_id == User.id)
-            .where(or_(subq.c.route_priority < 6, subq.c.route_priority is None))  # type: ignore
+            .outerjoin(aliased_subq, col(aliased_subq.user_id) == User.id)
+            .where(
+                or_(
+                    subq.c.route_priority <= self.COUNT_OF_ROUTES_TAKEN_IN_ACCOUNT,
+                    subq.c.route_priority is None,  # type: ignore
+                )
+            )
             .group_by(col(User.id))
             .order_by(desc("score"))
+            .options(selectinload(aliased_subq.route).selectinload("*"))
         )
 
         users_with_ascents_score = self._filtered_query(users_with_ascents_score)
 
-        self.routes_competition_table: dict[float, list[User]] = {}
+        self.routes_competition_table = {}
+        self.user_routes_ascent_table = {}
         user: User
         ascents_score: int
-        for user, ascents_score in (
+        ascent: Ascent
+        for user, ascents_score, ascent in (
             await self.session.execute(users_with_ascents_score)
         ).all():
+            if self.user_routes_ascent_table.get(user.id, None) is None:
+                self.user_routes_ascent_table[user.id] = []
+            ascent.set_absolute_image_urls(request)
+            self.user_routes_ascent_table[user.id].append(
+                AscentReadWithRoute.model_validate(ascent)
+            )
             if ascents_score not in self.routes_competition_table:
                 self.routes_competition_table[ascents_score] = []
             self.routes_competition_table[ascents_score].append(user)

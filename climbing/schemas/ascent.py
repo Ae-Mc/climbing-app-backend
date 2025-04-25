@@ -15,3 +15,12 @@ class AscentReadWithAll(AscentReadWithRoute):
     """Чтение пролаза со всеми возможными параметрами"""
 
     user: UserRead = Field(..., title="Скалолаз")
+
+
+class AscentReadRatingWithRoute(AscentRead):
+    """Чтение пролаза трассой"""
+
+    taken_in_account: bool = Field(
+        ..., title="Учитывалась ли трасса при подсчёте рейтинга"
+    )
+    route: RouteReadWithAll = Field(..., title="Трасса")

@@ -1,3 +1,5 @@
+import logging
+import time
 import urllib.parse
 from datetime import datetime
 from io import BytesIO
@@ -36,7 +38,7 @@ async def prepare_rating(
     calc = RatingCalculator(session=session, filter_params=rating_filter)
     calc.set_date_range(end_date=end_date, start_date=start_date)
     await calc.fill_ascents(request=request)
-    await calc.calc_routes_competition()
+    await calc.calc_routes_competition(request=request)
     await calc.fill_other_competition_scores()
     calc.fill_routes_competition_scores()
     return calc
@@ -58,7 +60,8 @@ async def rating(
     """Получение данных по рейтингу. По умолчанию временной интервал — полтора
     месяца с текущей даты"""
 
-    return (
+    start = time.time()
+    result = (
         await prepare_rating(
             request=request,
             session=session,
@@ -67,6 +70,9 @@ async def rating(
             rating_filter=RatingFilter(is_student=is_student, sex=sex),
         )
     ).scores
+    end = time.time()
+    logging.info(f"Rating calc time: {end - start}s")
+    return result
 
 
 @router.get(
@@ -82,7 +88,7 @@ async def rating_csv(
     is_student: bool | None = Query(None),
     sex: SexEnum | None = Query(None),
 ):
-    """Получение данных по рейтингу. По умолчанию временной интервал — полтора
+    """Получение xls таблицы с данными по рейтингу. По умолчанию временной интервал — полтора
     месяца с текущей даты"""
     calc = await prepare_rating(
         request=request,
