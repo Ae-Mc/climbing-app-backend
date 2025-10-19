@@ -56,7 +56,7 @@ async def rating(
     end_date: datetime | None = Query(None),
     is_student: bool | None = Query(None),
     sex: SexEnum | None = Query(None),
-):
+) -> list[Score]:
     """Получение данных по рейтингу. По умолчанию временной интервал — полтора
     месяца с текущей даты"""
 

@@ -47,6 +47,7 @@ class CRUDRoute(CRUDBase[Route, RouteCreate, RouteUpdate]):
         db_entity = await super().update(
             session, db_entity=db_entity, new_entity=update_data
         )
+        # TODO: rework image adding in API
         storage = FileStorage()
         for image in db_entity.images:
             await session.delete(image)

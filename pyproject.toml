@@ -1,54 +1,36 @@
-[tool.poetry]
+[project]
 name = "climbing"
-version = "1.2.1"
-description = ""
-authors = ["Alexandr Makurin <ae_mc@mail.ru>"]
-license = "MIT"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiosqlite==0.17.0",
+    "alembic==1.13.1",
+    "fastapi==0.109.2",
+    "fastapi-users[oauth] @ git+https://github.com/Ae-Mc/fastapi-users@add-refresh-token",
+    "fastapi-users-db-sqlmodel @ git+https://github.com/Ae-Mc/fastapi-users-db-sqlmodel@add-refresh-token",
+    "fastapi-versionizer==4.0.1",
+    "minio==7.2.8",
+    "pydantic==2.6.4",
+    "pydantic-settings==2.2.1",
+    "python-dateutil==2.9.0.post0",
+    "pyyaml==6.0.1",
+    "setuptools==68.2.2",
+    "sqlalchemy==2.0.29",
+    "sqlmodel==0.0.16",
+    "uvicorn==0.17.6",
+    "xlsxwriter==3.2.0",
+]
 
-[tool.poetry.dependencies]
-aiosqlite = "^0.17.0"
-alembic = "^1.7.5"
-pydantic = "^2.6.1"
-pydantic-settings = "^2.2.0"
-fastapi = "^0.109.2"
-fastapi-users = { git = "https://github.com/Ae-Mc/fastapi-users", branch = "add-refresh-token", extras = [
-    "oauth",
-] }
-fastapi-users-db-sqlmodel = { git = "https://github.com/Ae-Mc/fastapi-users-db-sqlmodel", branch = "add-refresh-token" }
-python = "^3.10"
-python-multipart = "^0.0.9"
-SQLAlchemy = "^2.0.0"
-python-dateutil = "^2.8.2"
-sqlmodel = "^0.0.16"
-pyyaml = "^6.0.1"
-setuptools = "^68.1.0"
-xlsxwriter = "^3.1.9"
-minio = "^7.2.8"
-fastapi-versionizer = "^4.0.1"
-
-[tool.poetry.extras]
-neovim = ["pynvim", "pyright"]
-
-[tool.poetry.group.dev.dependencies]
-black = "^21.12b0"
-flake8 = "^4.0.1"
-mypy = "^0.931"
-pycodestyle = "^2.8.0"
-pylint = "^2.12.2"
-uvicorn = "^0.17.0"
-commitizen = "^2.20.4"
-pylint-pydantic = "^0.2.4"
-pylint-sqlalchemy = "^0.3.0"
-# Start of neovim dependencies
-pynvim = { version = "^0.4.3", optional = true }
-pyright = { version = "^0.0.13", optional = true }
-# End of neovim dependencies
-
-[tool.commitizen]
-name = "cz_conventional_commits"
-version = "2.0.1"
-tag_format = "$version"
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+[dependency-groups]
+dev = [
+    "commitizen>=4.9.1",
+    "flake8>=7.3.0",
+    "mypy>=1.18.2",
+    "pycodestyle>=2.14.0",
+    "pylint>=4.0.1",
+    "pylint-pydantic>=0.4.0",
+    "pylint-sqlalchemy>=0.3.0",
+    "ruff>=0.14.1",
+]

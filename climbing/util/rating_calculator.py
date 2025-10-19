@@ -123,6 +123,7 @@ class RatingCalculator:
                 )
             )
             .group_by(col(User.id))
+            .having(col(User.is_active))
             .order_by(desc("score"))
             .options(selectinload(aliased_subq.route).selectinload("*"))
         )
