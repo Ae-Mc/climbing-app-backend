@@ -4,10 +4,7 @@ from typing import TYPE_CHECKING, List
 
 from fastapi import Request
 from fastapi_users.schemas import BaseUserCreate, BaseUserUpdate
-from fastapi_users_db_sqlmodel import (
-    SQLModelBaseOAuthAccount,
-    SQLModelBaseUserDB,
-)
+from fastapi_users_db_sqlmodel import SQLModelBaseOAuthAccount, SQLModelBaseUserDB
 from fastapi_users_db_sqlmodel.access_token import SQLModelBaseAccessRefreshToken
 from pydantic import UUID4, ConfigDict, EmailStr
 from sqlmodel import AutoString, Field, ForeignKey, Relationship, SQLModel
@@ -104,6 +101,8 @@ class Sex(SQLModel):
 class UserBase(FirstAndLastNames, Username, IsStudent, Sex):
     """Basic user model, that will be inherited by other models"""
 
+    is_active: bool = Field(default=True)
+
 
 class UserBaseWithCreatedAt(UserBase, CreatedAt):
     """Basic user model with generated created_at field"""
@@ -150,6 +149,18 @@ class UserCreate(UserBase, Email, Password, BaseUserCreate):
 class UserUpdate(FirstAndLastNames, Password, IsStudent, Sex, BaseUserUpdate):
     """User's update scheme"""
 
-    first_name: str | None
-    last_name: str | None
-    oauth_accounts: List[OAuthAccount] | None = None
+    is_active: bool | None = Field(default=None)
+    first_name: str | None = Field(default=None)
+    last_name: str | None = Field(default=None)
+    oauth_accounts: List[OAuthAccount] | None = Field(default=None)
+
+    def create_update_dict(self):
+        return self.model_dump(
+            exclude_unset=True,
+            exclude={
+                "id",
+                "is_superuser",
+                "is_verified",
+                "oauth_accounts",
+            },
+        )

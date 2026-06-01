@@ -22,8 +22,9 @@ class BaseRouteImage(SQLModel):
         изображения"""
         if "://" in self.url:
             return
-        url_obj = request.url
-        self.url = f"{url_obj.scheme}://{settings.MINIO_HOST}/{settings.MINIO_BUCKET_NAME}/{self.url}"
+        self.url = (
+            f"https://{settings.MINIO_HOST}/{settings.MINIO_BUCKET_NAME}/{self.url}"
+        )
 
 
 class RouteImage(BaseRouteImage, table=True):

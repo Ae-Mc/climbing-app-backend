@@ -215,7 +215,12 @@ class RatingCalculator:
                 )
                 .where(col(Competition.date) >= self._start_date)
                 .where(col(Competition.date) <= self._end_date)
-                .order_by(col(Competition.date), col(CompetitionParticipant.place))
+                .where(col(User.is_active))
+                .order_by(
+                    col(Competition.date),
+                    col(Competition.id),
+                    col(CompetitionParticipant.place),
+                )
             )
             return self._filtered_query(query)
 
@@ -271,7 +276,7 @@ class RatingCalculator:
         if self._filter_params is not None:
             inner_query = inner_query.join(
                 User, onclause=col(Ascent.user_id) == col(User.id)
-            )
+            ).where(col(User.is_active))
             inner_query = self._filtered_query(inner_query)
         inner_subq = inner_query.subquery()
         query = (
