@@ -16,7 +16,7 @@ dependencies = [
     "pydantic-settings==2.2.1",
     "python-dateutil==2.9.0.post0",
     "pyyaml==6.0.1",
-    "setuptools==68.2.2",
+    "setuptools==83.0.0",
     "sqlalchemy==2.0.29",
     "sqlmodel==0.0.16",
     "uvicorn==0.17.6",
