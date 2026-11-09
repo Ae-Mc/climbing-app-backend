@@ -37,6 +37,21 @@ from climbing.schemas.route import RouteReadWithAll
 router = APIRouter()
 
 
+@router.put(
+    "/me/tourist",
+    response_model=UserRead,
+    name="users:set_tourist",
+    responses=responses.UNAUTHORIZED.docs(),
+)
+async def set_tourist_status(
+    is_tourist: bool,
+    user: User = Depends(current_user),
+    user_manager: UserManager = Depends(get_user_manager),
+):
+    """Изменение туристического статуса текущего пользователя"""
+    return await user_manager.set_tourist_status(user, is_tourist)
+
+
 @router.get(
     "",
     response_model=list[UserRead],

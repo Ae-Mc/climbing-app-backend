@@ -13,6 +13,7 @@ from sqlmodel import col
 from climbing.core.score_maps import category_to_score_map, place_to_score_map
 from climbing.crud import ascent as crud_ascent
 from climbing.crud import competition_participant as crud_competition_participant
+from climbing.crud.tourist_visibility import visible_ascent_clause
 from climbing.db.models.ascent import Ascent
 from climbing.db.models.competition import Competition
 from climbing.db.models.competition_participant import CompetitionParticipant
@@ -20,7 +21,9 @@ from climbing.db.models.route import Route
 from climbing.db.models.user import User
 from climbing.schemas.ascent import AscentReadRatingWithRoute, AscentReadWithRoute
 from climbing.schemas.base_read_classes import CompetitionRead, UserRead
-from climbing.schemas.competition_participant import CompetitionParticipantReadRating
+from climbing.schemas.competition_participant import (
+    CompetitionParticipantReadRating,
+)
 from climbing.schemas.filters.rating_filter import RatingFilter
 from climbing.schemas.score import Score
 
@@ -61,11 +64,13 @@ class RatingCalculator:
             .join(Route)
             .where(col(Ascent.user_id) == user_id)
             .order_by(
-                desc("taken_in_account"), desc(self.categories_case.label("route_cost"))
+                desc("taken_in_account"),
+                desc(self.categories_case.label("route_cost")),
             )
             .options(selectinload(Ascent.route).selectinload("*"))
         )
 
+        stmt = self._visible_ascents_query(stmt)
         executed = await self.session.execute(stmt)
         raw_result = executed.all()
         result: list[AscentReadRatingWithRoute] = []
@@ -107,6 +112,8 @@ class RatingCalculator:
             .group_by(col(Ascent.user_id), col(Ascent.route_id))
             .order_by(desc("route_priority"))
         )
+        ascents_with_score = self._visible_ascents_query(ascents_with_score)
+
         subq = ascents_with_score.subquery().alias("ascents_subq")
         aliased_subq = aliased(Ascent, subq, name="ascents_subq")
         users_with_ascents_score = (
@@ -161,7 +168,9 @@ class RatingCalculator:
             if score != previous_score:
                 place += 1
                 previous_score = score
-            rating_score = self.get_place_score(place, len(users)) if score > 0 else 0
+            rating_score = (
+                self.get_place_score(place, len(users)) if score > 0 else 0
+            )
             rating_score *= ascent_competition.ratio
             for user in users:
                 if user.id in self._scores:
@@ -211,7 +220,8 @@ class RatingCalculator:
             query = (
                 query.join(Competition)
                 .join(
-                    User, onclause=col(User.id) == col(CompetitionParticipant.user_id)
+                    User,
+                    onclause=col(User.id) == col(CompetitionParticipant.user_id),
                 )
                 .where(col(Competition.date) >= self._start_date)
                 .where(col(Competition.date) <= self._end_date)
@@ -273,6 +283,7 @@ class RatingCalculator:
             )
             .label("ascent_rank"),
         )
+        inner_query = self._visible_ascents_query(inner_query)
         if self._filter_params is not None:
             inner_query = inner_query.join(
                 User, onclause=col(Ascent.user_id) == col(User.id)
@@ -327,8 +338,25 @@ class RatingCalculator:
             ratio=1.5,
         )
 
+    def _visible_ascents_query(self, query: Select) -> Select:
+        """Фильтрует исходные подъёмы до группировки и ранжирования."""
+        if self._filter_params is None:
+            return query
+        tourist_filter = self._filter_params.is_tourist
+        if tourist_filter is False:
+            return query.where(visible_ascent_clause(include_tourists=False))
+        if tourist_filter is True:
+            return query.where(
+                col(Ascent.user_id).in_(
+                    select(User.id).where(col(User.is_tourist).is_(True))
+                )
+            )
+        return query
+
     def _filtered_query(self, query: Select) -> Select:
         if self._filter_params:
+            if self._filter_params.is_tourist is not None:
+                query = query.where(col(User.is_tourist) == self._filter_params.is_tourist)
             if self._filter_params.is_student is not None:
                 query = query.where(
                     col(User.is_student) == self._filter_params.is_student

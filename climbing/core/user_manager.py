@@ -22,6 +22,10 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
     reset_password_token_secret = settings.SECRET
     verification_token_secret = settings.SECRET
 
+    async def set_tourist_status(self, user: User, is_tourist: bool) -> User:
+        """Изменяет туристический статус пользователя."""
+        return await self.user_db.update(user, {"is_tourist": is_tourist})
+
     async def authenticate(self, credentials: OAuth2PasswordRequestForm) -> User | None:
         user = await self.get_user_by_credentials(credentials)
         if user is None:
