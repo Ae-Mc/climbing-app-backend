@@ -8,6 +8,7 @@ from sqlmodel import col
 
 from climbing.core.responses import ID_NOT_FOUND, UNAUTHORIZED
 from climbing.core.security import current_active_user
+from climbing.api.tourist_visibility import optional_user, visible_ascent_clause, may_view_tourists
 from climbing.crud import ascent as crud_ascent
 from climbing.crud import route as crud_route
 from climbing.db.models.ascent import Ascent, AscentCreate
@@ -24,11 +25,13 @@ router = APIRouter()
 async def ascents(
     request: Request,
     filter: AscentsFilter = Depends(),
+    viewer: User | None = Depends(optional_user),
     session: AsyncSession = Depends(get_async_session),
 ):
     """Получение списка всех подъёмов"""
 
     def query_modifier(query: Select[tuple[Ascent]]) -> Select[tuple[Ascent]]:
+        query = query.where(visible_ascent_clause(viewer))
         if filter.date_from is not None:
             query = query.where(col(Ascent.date) > filter.date_from)
         if filter.is_flash is not None:
@@ -56,6 +59,7 @@ async def ascents(
 async def recent_ascents(
     request: Request,
     session: AsyncSession = Depends(get_async_session),
+    viewer: User | None = Depends(optional_user),
 ):
     """Получение списка недавних подъёмов"""
 
@@ -66,6 +70,7 @@ async def recent_ascents(
             sort_by_date=Order.DESCENDING,
         ),
         session=session,
+        viewer=viewer,
     )
 
 
@@ -85,7 +90,7 @@ async def ascent_create(
 ):
     """Добавление подъёма"""
     route = await crud_route.get(session, row_id=route_id)
-    if route is None:
+    if route is None or (not user.is_tourist and route.author.is_tourist):
         raise ID_NOT_FOUND.exception()
     _ascent = await crud_ascent.create(
         session,
@@ -110,10 +115,11 @@ async def ascent(
     request: Request,
     session: AsyncSession = Depends(get_async_session),
     ascent_id: UUID4 = Path(...),
+    viewer: User | None = Depends(optional_user),
 ):
     """Получение подъёма по ID"""
     _ascent = await crud_ascent.get(session, ascent_id)
-    if _ascent is None:
+    if _ascent is None or (not may_view_tourists(viewer) and (_ascent.user.is_tourist or _ascent.route.author.is_tourist)):
         raise ID_NOT_FOUND.exception()
     _ascent.set_absolute_image_urls(request)
     return _ascent

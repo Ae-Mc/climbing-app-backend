@@ -20,6 +20,7 @@ from sqlmodel import col
 
 from climbing.core import responses
 from climbing.core.security import current_active_user
+from climbing.api.tourist_visibility import optional_user, visible_route_clause, may_view_tourists
 from climbing.core.user_manager import UserManager, get_user_manager
 from climbing.crud import route as crud_route
 from climbing.db.models import Category, RouteCreate, User
@@ -35,11 +36,13 @@ router = APIRouter()
 async def routes(
     request: Request,
     filter: RoutesFilter = Depends(),
+    viewer: User | None = Depends(optional_user),
     session: AsyncSession = Depends(get_async_session),
 ):
     "Получение списка всех трасс"
 
     def query_modifier(query: Select[tuple[Route]]) -> Select[tuple[Route]]:
+        query = query.where(visible_route_clause(viewer))
         if filter.archived is not None:
             query = query.where(col(Route.archived) == filter.archived)
         if filter.author_id is not None:
@@ -62,10 +65,11 @@ async def route(
     request: Request,
     route_id: UUID = Path(...),
     session: AsyncSession = Depends(get_async_session),
+    viewer: User | None = Depends(optional_user),
 ):
     "Получение трассы"
     route_instance = await crud_route.get(session, route_id)
-    if route_instance is None:
+    if route_instance is None or (not may_view_tourists(viewer) and route_instance.author.is_tourist):
         raise responses.ID_NOT_FOUND.exception()
     route_instance.set_absolute_image_urls(request)
     return route_instance
@@ -201,7 +205,7 @@ async def archive_route(
     session: AsyncSession = Depends(get_async_session),
     user: User = Depends(current_active_user),
 ):
-    obj = await route(request, route_id, session)
+    obj = await route(request, route_id, session, user)
     if obj.author_id != user.id and not user.is_superuser:
         raise responses.ACCESS_DENIED.exception()
     updated_obj = await crud_route.archive(session, row_id=obj.id)

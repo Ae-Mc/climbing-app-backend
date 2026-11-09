@@ -104,9 +104,34 @@ class RatingCalculator:
             .where(col(Ascent.date) >= self._start_date)
             .where(col(Ascent.date) <= self._end_date)
             .join(Route)
+            .where(
+                True
+                if self._filter_params is None
+                   or self._filter_params.is_tourist is not False
+                else col(Route.author_id).in_(
+                    select(User.id).where(
+                        col(User.is_tourist).is_(False)
+                    )
+                )
+            )
             .group_by(col(Ascent.user_id), col(Ascent.route_id))
             .order_by(desc("route_priority"))
         )
+        # Ограничиваем исходные пролазы по режиму рейтинга.
+        # Фильтрация выполняется ДО row_number(), группировки
+        # и вычисления баллов.
+        if self._filter_params is not None:
+            tourist_filter = self._filter_params.is_tourist
+
+            if tourist_filter is not None:
+                eligible_users = select(User.id).where(
+                    col(User.is_tourist).is_(tourist_filter)
+                )
+
+                ascents_with_score = ascents_with_score.where(
+                    col(Ascent.user_id).in_(eligible_users)
+                )
+
         subq = ascents_with_score.subquery().alias("ascents_subq")
         aliased_subq = aliased(Ascent, subq, name="ascents_subq")
         users_with_ascents_score = (
@@ -273,6 +298,14 @@ class RatingCalculator:
             )
             .label("ascent_rank"),
         )
+        if self._filter_params is not None and self._filter_params.is_tourist is False:
+            inner_query = inner_query.where(
+                col(Ascent.route_id).in_(
+                    select(Route.id).where(
+                        col(Route.author_id).in_(select(User.id).where(col(User.is_tourist).is_(False)))
+                    )
+                )
+            )
         if self._filter_params is not None:
             inner_query = inner_query.join(
                 User, onclause=col(Ascent.user_id) == col(User.id)
@@ -329,6 +362,8 @@ class RatingCalculator:
 
     def _filtered_query(self, query: Select) -> Select:
         if self._filter_params:
+            if self._filter_params.is_tourist is not None:
+                query = query.where(col(User.is_tourist) == self._filter_params.is_tourist)
             if self._filter_params.is_student is not None:
                 query = query.where(
                     col(User.is_student) == self._filter_params.is_student

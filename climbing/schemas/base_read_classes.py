@@ -15,6 +15,7 @@ class UserRead(UserBaseWithCreatedAt):
     id: UUID4
     email: str
     is_superuser: bool
+    is_tourist: bool = False
 
 
 class RouteRead(RouteBaseDB):

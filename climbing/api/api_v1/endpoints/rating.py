@@ -14,7 +14,8 @@ from xlsxwriter import Workbook
 from climbing.core.score_maps import category_to_score_map, place_to_score_map
 from climbing.crud.crud_competition import competition as crud_competition
 from climbing.db.models.competition import Competition
-from climbing.db.models.user import SexEnum
+from climbing.db.models.user import SexEnum, User
+from climbing.api.tourist_visibility import optional_user
 from climbing.db.session import get_async_session
 from climbing.schemas.base_read_classes import CompetitionRead
 from climbing.schemas.category_to_score import CategoryToScore
@@ -56,6 +57,8 @@ async def rating(
     end_date: datetime | None = Query(None),
     is_student: bool | None = Query(None),
     sex: SexEnum | None = Query(None),
+    only_tourists: bool = Query(False),
+    viewer: User | None = Depends(optional_user),
 ) -> list[Score]:
     """Получение данных по рейтингу. По умолчанию временной интервал — полтора
     месяца с текущей даты"""
@@ -67,7 +70,10 @@ async def rating(
             session=session,
             start_date=start_date,
             end_date=end_date,
-            rating_filter=RatingFilter(is_student=is_student, sex=sex),
+            rating_filter=RatingFilter(
+                is_student=is_student, sex=sex,
+                is_tourist=True if only_tourists and viewer and viewer.is_tourist else (None if viewer and viewer.is_tourist else False),
+            ),
         )
     ).scores
     end = time.time()
@@ -87,6 +93,8 @@ async def rating_csv(
     end_date: datetime | None = Query(None),
     is_student: bool | None = Query(None),
     sex: SexEnum | None = Query(None),
+    only_tourists: bool = Query(False),
+    viewer: User | None = Depends(optional_user),
 ):
     """Получение xls таблицы с данными по рейтингу. По умолчанию временной интервал — полтора
     месяца с текущей даты"""
@@ -95,7 +103,10 @@ async def rating_csv(
         session=session,
         start_date=start_date,
         end_date=end_date,
-        rating_filter=RatingFilter(is_student=is_student, sex=sex),
+        rating_filter=RatingFilter(
+                is_student=is_student, sex=sex,
+                is_tourist=True if only_tourists and viewer and viewer.is_tourist else (None if viewer and viewer.is_tourist else False),
+            ),
     )
     scores = calc.scores
     dataIO = BytesIO()
@@ -127,7 +138,8 @@ async def rating_csv(
         SexEnum.female: "Женский ",
         None: "",
     }
-    rating_fullname = f"{rating_student_name[is_student]}{rating_sex_name[sex]}рейтинг на {calc.end_date.date()}"
+    tourist_label = "Туристы " if only_tourists and viewer and viewer.is_tourist else ""
+    rating_fullname = f"{tourist_label}{rating_student_name[is_student]}{rating_sex_name[sex]}рейтинг на {calc.end_date.date()}"
     worksheet.merge_range(
         first_row=0,
         first_col=0,

@@ -37,6 +37,20 @@ from climbing.schemas.route import RouteReadWithAll
 router = APIRouter()
 
 
+@router.put("/me/tourist", response_model=UserRead, name="users:set_tourist")
+async def set_tourist_status(
+    is_tourist: bool,
+    session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_user),
+):
+    """Opt-in/opt-out, only for the authenticated account."""
+    user.is_tourist = is_tourist
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+    return user
+
+
 @router.get(
     "",
     response_model=list[UserRead],

@@ -86,6 +86,16 @@ class IsStudent(SQLModel):
     is_student: bool = Field(False, sa_column_kwargs={"server_default": "0"})
 
 
+class IsTourist(SQLModel):
+    """Model with tourist account status"""
+
+    is_tourist: bool = Field(
+        default=False,
+        nullable=False,
+        sa_column_kwargs={"server_default": "0"},
+    )
+
+
 class Sex(SQLModel):
     """Model with only sex field"""
 
@@ -98,7 +108,13 @@ class Sex(SQLModel):
     model_config = ConfigDict(use_enum_values=True)
 
 
-class UserBase(FirstAndLastNames, Username, IsStudent, Sex):
+class UserBase(
+    FirstAndLastNames,
+    Username,
+    IsStudent,
+    IsTourist,
+    Sex,
+):
     """Basic user model, that will be inherited by other models"""
 
     is_active: bool = Field(default=True)
