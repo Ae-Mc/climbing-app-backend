@@ -19,10 +19,11 @@ from sqlalchemy.sql.selectable import Select
 from sqlmodel import col
 
 from climbing.core import responses
-from climbing.core.security import current_active_user
-from climbing.api.tourist_visibility import optional_user, visible_route_clause, may_view_tourists
+from climbing.core.security import current_active_user, optional_user
+from climbing.core.tourist_visibility import may_view_tourists
 from climbing.core.user_manager import UserManager, get_user_manager
 from climbing.crud import route as crud_route
+from climbing.crud.tourist_visibility import visible_route_clause
 from climbing.db.models import Category, RouteCreate, User
 from climbing.db.models.route import Route, RouteBase, RouteUpdate
 from climbing.db.session import get_async_session
@@ -42,7 +43,7 @@ async def routes(
     "Получение списка всех трасс"
 
     def query_modifier(query: Select[tuple[Route]]) -> Select[tuple[Route]]:
-        query = query.where(visible_route_clause(viewer))
+        query = query.where(visible_route_clause(may_view_tourists(viewer)))
         if filter.archived is not None:
             query = query.where(col(Route.archived) == filter.archived)
         if filter.author_id is not None:
@@ -69,7 +70,9 @@ async def route(
 ):
     "Получение трассы"
     route_instance = await crud_route.get(session, route_id)
-    if route_instance is None or (not may_view_tourists(viewer) and route_instance.author.is_tourist):
+    if route_instance is None or (
+        not may_view_tourists(viewer) and route_instance.author.is_tourist
+    ):
         raise responses.ID_NOT_FOUND.exception()
     route_instance.set_absolute_image_urls(request)
     return route_instance
